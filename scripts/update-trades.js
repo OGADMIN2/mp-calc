@@ -5,9 +5,9 @@ const path = require('path');
 
 // ── Spreadsheet IDs ─────────────────────────────────────────────────────────
 const IDS = {
-  phoenix: '1EA7QSKrXIlEfFGLIKadMQnidMWHIBxDS',
+  phoenix: '1Sh8OmggqTAqsOnz67iICNqBB2t_9LpVs4wmnthK2tF4',
   dd:      '1d7NiRDbQ6nQ6KUashZ26U7fxQvH60Enok9OaCU8sKaQ',
-  mp:      '18QqVp0eW48CymP7hwZQ6MJI7eY1HCgq-'
+  mp:      '1H3nAFD5XNrrBvI4YhaFnSFyCRd7CtzDDDhEIMGRwTfg'
 };
 
 const HTML_DIR = path.join(__dirname, '..');
