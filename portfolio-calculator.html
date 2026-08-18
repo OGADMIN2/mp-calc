@@ -1059,11 +1059,19 @@ document.addEventListener('DOMContentLoaded', function() {
     compute();
   });
 
-  window.addEventListener('resize', function() {
+    window.addEventListener('resize', function() {
     compute();
   });
 
-  compute();
+  function firstDraw() {
+    var wrap = document.querySelector('.chart-wrap');
+    if (wrap && wrap.clientWidth > 0) {
+      compute();
+    } else {
+      requestAnimationFrame(firstDraw);
+    }
+  }
+  requestAnimationFrame(firstDraw);
 });
 </script>
 <script>
