@@ -213,7 +213,7 @@ async function main() {
 
   // ── 3. Market Power ────────────────────────────────────────────────────
   console.log('\n📋 Reading Market Power spreadsheet…');
-  const mpSheets = await getAllRows(sheets, IDS.mp, 'A:Z');
+  const mpSheets = await getAllRows(sheets, IDS.mp, 'A:E');
   let mpTrades = [];
   for (const { title, rows } of mpSheets) {
     const year = parseInt(title);
