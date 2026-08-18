@@ -185,7 +185,7 @@ async function main() {
     if (parsed.length) console.log(`   Tab "${title}": ${parsed.length} trades`);
     phxTrades = phxTrades.concat(parsed);
   }
-  phxTrades = sortByDate(phxTrades);
+    phxTrades = sortByDate(phxTrades).filter(t => t.year >= 2026);
   console.log(`   ✅ Phoenix total: ${phxTrades.length} trades`);
 
   // ── 2. Double Dip ──────────────────────────────────────────────────────
