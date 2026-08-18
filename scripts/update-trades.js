@@ -110,24 +110,35 @@ function ddEntry(t) {
 }
 
 // ── MARKET POWER parser ─────────────────────────────────────────────────────
-//
-// Each year tab has rows:
-//   col 0 : trade # (numeric)
-//   col 1 : Date of Trade   e.g. "Jan 5"
-//   col 2 : Result          "Win" / "Loss" / "Exited Early"
-//   col 3 : ROI%            e.g. "7.50%" or 7.50
+// Scans the first 5 rows for a header to discover column positions dynamically,
+// then falls back to defaults (0,1,2,3) if no header is found.
 function parseMP(rows, year) {
+  // Discover columns from header
+  let colNum = 0, colDate = 1, colResult = 2, colRoi = 3;
+  for (let i = 0; i < Math.min(5, rows.length); i++) {
+    const row = rows[i];
+    let foundHeader = false;
+    for (let j = 0; j < row.length; j++) {
+      const h = (row[j] || '').toString().toLowerCase().trim();
+      if (h === '#' || h === 'no.' || h === 'trade #' || h === 'trade#') { colNum = j; foundHeader = true; }
+      else if (h.includes('date')) colDate = j;
+      else if (h.includes('result') || h === 'win/loss' || h === 'outcome') colResult = j;
+      else if (h.includes('roi') || h === '% return' || h === 'return %') colRoi = j;
+    }
+    if (foundHeader) break;
+  }
+
   const trades = [];
   for (const row of rows) {
-    const tradeNum = parseInt(row[0]);
+    const tradeNum = parseInt(row[colNum]);
     if (!tradeNum || tradeNum <= 0) continue;
 
-    const dateStr = (row[1] || '').trim();
+    const dateStr = (row[colDate] || '').trim();
     if (!dateStr) continue;
 
-    const result = (row[2] || '').trim();
-    const roi    = num(row[3]);
-    if (!result || isNaN(roi) || roi === 0) continue;
+    const result = (row[colResult] || '').trim();
+    const roi    = num(row[colRoi]);
+    if (!result || roi === 0) continue;
 
     trades.push({ year, date: dateStr, result, roi: +roi.toFixed(2) });
   }
@@ -185,8 +196,8 @@ async function main() {
     if (parsed.length) console.log(`   Tab "${title}": ${parsed.length} trades`);
     phxTrades = phxTrades.concat(parsed);
   }
-    phxTrades = sortByDate(phxTrades).filter(t => t.year >= 2026);
-  console.log(`   ✅ Phoenix total: ${phxTrades.length} trades`);
+  phxTrades = sortByDate(phxTrades).filter(t => t.year >= 2026);
+  console.log(`   ✅ Phoenix total: ${phxTrades.length} trades (2026+)`);
 
   // ── 2. Double Dip ──────────────────────────────────────────────────────
   console.log('\n📋 Reading Double Dip spreadsheet…');
@@ -197,12 +208,12 @@ async function main() {
     if (parsed.length) console.log(`   Tab "${title}": ${parsed.length} trades`);
     ddTrades = ddTrades.concat(parsed);
   }
-    ddTrades = sortByDate(ddTrades).filter(t => t.year >= 2026);
-  console.log(`   ✅ Double Dip total: ${ddTrades.length} trades`);
+  ddTrades = sortByDate(ddTrades).filter(t => t.year >= 2026);
+  console.log(`   ✅ Double Dip total: ${ddTrades.length} trades (2026+)`);
 
   // ── 3. Market Power ────────────────────────────────────────────────────
   console.log('\n📋 Reading Market Power spreadsheet…');
-  const mpSheets = await getAllRows(sheets, IDS.mp, 'A:D');
+  const mpSheets = await getAllRows(sheets, IDS.mp, 'A:Z');
   let mpTrades = [];
   for (const { title, rows } of mpSheets) {
     const year = parseInt(title);
