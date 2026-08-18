@@ -113,20 +113,20 @@ function ddEntry(t) {
 // Scans the first 5 rows for a header to discover column positions dynamically,
 // then falls back to defaults (0,1,2,3) if no header is found.
 function parseMP(rows, year) {
-  // Discover columns from header
+   // Discover columns from header — use FIRST match so "ROI%" beats "Total ROI"
   let colNum = 0, colDate = 1, colResult = 2, colRoi = 3;
+  let foundHeader = false, foundDate = false, foundResult = false, foundRoi = false;
   for (let i = 0; i < Math.min(5, rows.length); i++) {
     const row = rows[i];
-    let foundHeader = false;
     for (let j = 0; j < row.length; j++) {
       const h = (row[j] || '').toString().toLowerCase().trim();
-      if (h === '#' || h === 'no.' || h === 'trade #' || h === 'trade#') { colNum = j; foundHeader = true; }
-      else if (h.includes('date')) colDate = j;
-      else if (h.includes('result') || h === 'win/loss' || h === 'outcome') colResult = j;
-      else if (h.includes('roi') || h === '% return' || h === 'return %') colRoi = j;
+      if (!foundHeader && (h === '#' || h === 'no.' || h === 'trade #' || h === 'trade#')) { colNum = j; foundHeader = true; }
+      else if (!foundDate && h.includes('date')) { colDate = j; foundDate = true; }
+      else if (!foundResult && (h.includes('result') || h === 'win/loss' || h === 'outcome')) { colResult = j; foundResult = true; }
+      else if (!foundRoi && (h.includes('roi') || h === '% return' || h === 'return %')) { colRoi = j; foundRoi = true; }
     }
     if (foundHeader) break;
-  }
+  } 
 
   const trades = [];
   for (const row of rows) {
