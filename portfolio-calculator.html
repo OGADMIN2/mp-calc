@@ -762,9 +762,12 @@ const MP = [
 
 // ─── Merge and sort ───────────────────────────────────────────────────────────
 var MONTH = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+var MONTH_LONG = {january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
 function parseDate(t) {
-  var p = t.date.split(' ');
-  return new Date(t.year, MONTH[p[0]], parseInt(p[1]));
+  var p = t.date.trim().split(/\s+/);
+  var m = MONTH[p[0]];
+  if (m === undefined) m = MONTH_LONG[p[0].toLowerCase()];
+  return new Date(t.year, m, parseInt(p[1]));
 }
 
 var ALL = [];
