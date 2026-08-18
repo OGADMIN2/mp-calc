@@ -1,0 +1,46 @@
+name: Update Trade Data
+
+on:
+  schedule:
+    # Runs at 9 PM UTC Mon–Fri (5 PM Eastern, after market close)
+    - cron: '0 21 * * 1-5'
+  workflow_dispatch:   # allows manual "Run workflow" trigger from GitHub UI
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to push the updated HTML files
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: scripts
+
+      - name: Fetch latest trades and update calculators
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+        run: node scripts/update-trades.js
+
+      - name: Commit and push if anything changed
+        run: |
+          git config user.name  "Trade Updater Bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add phoenix-calculator.html double-dip-calculator.html \
+                  market-power-calculator.html portfolio-calculator.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Auto-update trade data $(date -u '+%Y-%m-%d')"
+            git push
+          fi
