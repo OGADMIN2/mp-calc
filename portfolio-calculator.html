@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Power Method Portfolio Calculator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:100vh}
+
+.hero{background:linear-gradient(135deg,#0f172a 0%,#1a0d2e 25%,#0d2233 55%,#0f172a 100%);border-bottom:1px solid #1e293b;padding:36px 24px 28px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(139,92,246,.12) 0%,rgba(16,185,129,.08) 50%,rgba(59,130,246,.10) 100%)}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 14px;font-size:11px;color:#94a3b8;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;position:relative}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-size:clamp(22px,4vw,36px);font-weight:800;letter-spacing:-.02em;position:relative}
+.hero h1 .grad{background:linear-gradient(90deg,#a78bfa,#34d399,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{color:#64748b;font-size:14px;margin-top:8px;position:relative}
+
+.strategy-pills{display:flex;justify-content:center;gap:10px;margin-top:16px;flex-wrap:wrap;position:relative}
+.s-pill{display:flex;align-items:center;gap:6px;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;letter-spacing:.02em}
+.s-pill-ph{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.35);color:#a78bfa}
+.s-pill-dd{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#34d399}
+.s-pill-mp{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);color:#60a5fa}
+.s-pill-dot{width:6px;height:6px;border-radius:50%}
+
+.container{max-width:1100px;margin:0 auto;padding:0 16px 48px}
+
+.stat-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:24px 0 0}
+.stat-item{background:#141c2e;border:1px solid #1e293b;border-radius:12px;padding:18px 16px;text-align:center}
+.stat-value{font-size:clamp(22px,3.5vw,32px);font-weight:800;letter-spacing:-.02em}
+.stat-value.pos{color:#34d399}
+.stat-value.neg{color:#f87171}
+.stat-value.neutral{color:#e2e8f0}
+.stat-label{color:#64748b;font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
+
+.panel{background:#141c2e;border:1px solid #1e293b;border-radius:14px;padding:22px;margin-top:20px}
+.panel-title{font-size:13px;font-weight:700;color:#64748b;letter-spacing:.06em;text-transform:uppercase;margin-bottom:18px}
+
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media(max-width:640px){.settings-grid{grid-template-columns:1fr}}
+
+.sl-row{margin-bottom:18px}
+.sl-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.sl-label{font-size:13px;font-weight:600;color:#cbd5e1}
+.sl-val{font-size:13px;font-weight:700;color:#e2e8f0}
+.sl-sub{font-size:11px;color:#475569;margin-top:2px}
+
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;outline:none;cursor:pointer}
+input[type=range].sl-main{background:linear-gradient(to right,#6d28d9 0%,#6d28d9 var(--pct,50%),#1e293b var(--pct,50%),#1e293b 100%)}
+input[type=range].sl-ph{background:linear-gradient(to right,#7c3aed 0%,#7c3aed var(--pct,15%),#1e293b var(--pct,15%),#1e293b 100%)}
+input[type=range].sl-dd{background:linear-gradient(to right,#059669 0%,#059669 var(--pct,10%),#1e293b var(--pct,10%),#1e293b 100%)}
+input[type=range].sl-mp{background:linear-gradient(to right,#1d4ed8 0%,#1d4ed8 var(--pct,15%),#1e293b var(--pct,15%),#1e293b 100%)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #6d28d9;cursor:pointer}
+input[type=range].sl-dd::-webkit-slider-thumb{border-color:#059669}
+input[type=range].sl-mp::-webkit-slider-thumb{border-color:#1d4ed8}
+input[type=range].sl-main::-webkit-slider-thumb{border-color:#6d28d9}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #6d28d9;cursor:pointer}
+
+.mode-row{display:flex;gap:8px;margin-top:6px}
+.mode-btn{flex:1;padding:9px;border-radius:8px;border:1px solid #1e293b;background:#0f172a;color:#64748b;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.mode-btn.active{background:#1e293b;color:#e2e8f0;border-color:#334155}
+
+.strategy-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
+@media(max-width:640px){.strategy-cards{grid-template-columns:1fr}}
+
+.s-card{border-radius:14px;padding:18px;border:1px solid}
+.s-card-ph{background:linear-gradient(135deg,rgba(109,40,217,.12),rgba(139,92,246,.06));border-color:rgba(139,92,246,.3)}
+.s-card-dd{background:linear-gradient(135deg,rgba(5,150,105,.12),rgba(16,185,129,.06));border-color:rgba(16,185,129,.3)}
+.s-card-mp{background:linear-gradient(135deg,rgba(29,78,216,.12),rgba(59,130,246,.06));border-color:rgba(59,130,246,.3)}
+
+.s-card-name{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+.s-card-name-ph{color:#a78bfa}
+.s-card-name-dd{color:#34d399}
+.s-card-name-mp{color:#60a5fa}
+.s-card-alloc{font-size:11px;color:#475569;margin-bottom:14px}
+.s-card-pl{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:12px}
+.s-card-pl.pos{color:#4ade80}
+.s-card-pl.neg{color:#f87171}
+
+.s-card-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid rgba(255,255,255,.05)}
+.s-card-row:first-of-type{border-top:none;padding-top:0}
+.s-row-label{font-size:11px;color:#64748b}
+.s-row-val{font-size:12px;font-weight:600;color:#cbd5e1}
+
+.balance-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
+.bal-box{background:#141c2e;border:1px solid #1e293b;border-radius:12px;padding:16px;text-align:center}
+.bal-label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.bal-val{font-size:20px;font-weight:700;color:#e2e8f0}
+.bal-val.pos{color:#4ade80}
+.bal-val.neg{color:#f87171}
+
+.chart-section{margin-top:20px}
+.chart-title{font-size:13px;font-weight:600;color:#64748b;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px}
+.chart-wrap{background:#141c2e;border:1px solid #1e293b;border-radius:14px;padding:16px;position:relative}
+canvas{width:100%;height:200px;display:block}
+
+.year-section{margin-top:20px}
+.year-table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#0f172a;color:#94a3b8;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:10px 14px;text-align:left;border-bottom:1px solid #1e293b}
+td{padding:9px 14px;border-bottom:1px solid #1e293b;color:#cbd5e1}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.td-gain{color:#4ade80;font-weight:600}
+.td-loss{color:#f87171;font-weight:600}
+
+.disclaimer{margin-top:32px;background:#141c2e;border:1px solid #334155;border-radius:12px;padding:20px}
+.disc-title{font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.disc-title::before{content:'⚠';font-size:14px}
+.disclaimer ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.disclaimer li{font-size:12px;color:#94a3b8;line-height:1.65;padding-left:16px;position:relative}
+.disclaimer li::before{content:'•';position:absolute;left:0;color:#64748b}
+.disclaimer strong{color:#cbd5e1}
+
+.alloc-total{font-size:11px;color:#64748b;margin-top:4px}
+.alloc-total span{color:#e2e8f0;font-weight:600}
+
+@media(max-width:640px){.stat-bar{grid-template-columns:repeat(2,1fr)}.balance-row{grid-template-columns:1fr 1fr}}
+@media(max-width:400px){.stat-bar{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-badge"><span class="badge-dot"></span>Live Trading Data</div>
+  <h1>Market Power Method <span class="grad">Portfolio Calculator</span></h1>
+  <p class="hero-sub">Combined performance across all three live SPX options strategies</p>
+  <div class="strategy-pills">
+    <div class="s-pill s-pill-ph"><span class="s-pill-dot" style="background:#8b5cf6"></span>Phoenix</div>
+    <div class="s-pill s-pill-dd"><span class="s-pill-dot" style="background:#10b981"></span>Double Dip</div>
+    <div class="s-pill s-pill-mp"><span class="s-pill-dot" style="background:#3b82f6"></span>Market Power</div>
+  </div>
+  <p style="color:#fbbf24;font-size:13px;font-weight:600;margin-top:14px;position:relative;letter-spacing:.01em">Live trading results from 2023 to today. All trades were posted in our membership area.</p>
+</div>
+
+<div class="container">
+
+  <div class="stat-bar">
+    <div class="stat-item">
+      <div class="stat-value pos" id="port-return">—</div>
+      <div class="stat-label">Portfolio Return</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value pos" id="port-profit">—</div>
+      <div class="stat-label">Total Profit</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value neutral" id="port-trades">—</div>
+      <div class="stat-label">Total Trades</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value neutral" id="port-winrate">—</div>
+      <div class="stat-label">Combined Win Rate</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Portfolio Settings</div>
+    <div class="settings-grid">
+      <div>
+        <div class="sl-row">
+          <div class="sl-head">
+            <span class="sl-label">Starting Account Balance</span>
+            <span class="sl-val" id="bal-display">$75,000</span>
+          </div>
+          <input type="range" class="sl-main" id="balance-slider" min="15000" max="500000" step="5000" value="75000">
+          <div style="display:flex;justify-content:space-between;margin-top:4px"><span class="sl-sub">$15k</span><span class="sl-sub">$500k</span></div>
+        </div>
+        <div class="sl-row" style="margin-bottom:0">
+          <div class="sl-head"><span class="sl-label">Growth Mode</span></div>
+          <div class="mode-row">
+            <button class="mode-btn" id="mode-fixed">Fixed Amount</button>
+            <button class="mode-btn active" id="mode-compound">Compounding</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sl-row">
+          <div class="sl-head">
+            <span class="sl-label" style="color:#a78bfa">Phoenix Allocation</span>
+            <span class="sl-val" id="ph-display">15% &nbsp;<span style="color:#64748b;font-size:11px" id="ph-dollar">$11,250</span></span>
+          </div>
+          <input type="range" class="sl-ph" id="ph-slider" min="0" max="50" step="1" value="15">
+        </div>
+        <div class="sl-row">
+          <div class="sl-head">
+            <span class="sl-label" style="color:#34d399">Double Dip Allocation</span>
+            <span class="sl-val" id="dd-display">10% &nbsp;<span style="color:#64748b;font-size:11px" id="dd-dollar">$7,500</span></span>
+          </div>
+          <input type="range" class="sl-dd" id="dd-slider" min="0" max="50" step="1" value="10">
+        </div>
+        <div class="sl-row" style="margin-bottom:0">
+          <div class="sl-head">
+            <span class="sl-label" style="color:#60a5fa">Market Power Allocation</span>
+            <span class="sl-val" id="mp-display">15% &nbsp;<span style="color:#64748b;font-size:11px" id="mp-dollar">$11,250</span></span>
+          </div>
+          <input type="range" class="sl-mp" id="mp-slider" min="0" max="50" step="1" value="15">
+          <div class="alloc-total" id="alloc-total" style="margin-top:8px">Total deployed: <span id="total-pct">40%</span> of account</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="strategy-cards">
+    <div class="s-card s-card-ph">
+      <div class="s-card-name s-card-name-ph">Phoenix</div>
+      <div class="s-card-alloc" id="ph-alloc-label">1DTE SPX · 15% allocation</div>
+      <div class="s-card-pl pos" id="ph-pl">—</div>
+      <div class="s-card-row">
+        <span class="s-row-label">Account Contribution</span>
+        <span class="s-row-val" id="ph-ret">—</span>
+      </div>
+      <div class="s-card-row">
+        <span class="s-row-label">Win Rate</span>
+        <span class="s-row-val" id="ph-wr">—</span>
+      </div>
+      <div class="s-card-row">
+        <span class="s-row-label">Profit Factor</span>
+        <span class="s-row-val" id="ph-pf">—</span>
+      </div>
+      <div class="s-card-row">
+        <span class="s-row-label">Trades</span>
+        <span class="s-row-val" id="ph-tc">101</span>
+      </div>
+      <p id="ph-live" style="font-size:11px;color:#fbbf24;font-weight:600;margin-top:10px">*Live trading started in 2026</p>
+    </div>
+    <div class="s-card s-card-dd">
+      <div class="s-card-name s-card-name-dd">Double Dip</div>
+      <div class="s-card-alloc" id="dd-alloc-label">Weekly SPX · 10% allocation</div>
+      <div class="s-card-pl pos" id="dd-pl">—</div>
+      <div class="s-card-row">
+        <span class="s-row-label">Account Contribution</span>
+        <span class="s-row-val" id="dd-ret">—</span>
+      </div>
+      <div class="s-card-row">
+        <span class="s-row-label">Win Rate</span>
+        <span class="s-row-val" id="dd-wr">—</span>
+      </div>
+      <div class="s-card-row">
+        <span class="s-row-label">Profit Factor</span>
+        <span class="s-row-val" id="dd-pf">—</span>
+      </div>
+      <div class="s-card-row">
+        <span class="s-row-label">Trades</span>
+        <span class="s-row-val" id="dd-tc">33</span>
+      </div>
+      <p id="dd-live" style="font-size:11px;color:#fbbf24;font-weight:600;margin-top:10px">*Live trading started in 2026</p>
+    </div>
+    <div class="s-card s-card-mp">
+      <div class="s-card-name s-card-name-mp">Market Power</div>
+      <div class="s-card-alloc" id="mp-alloc-label">SPX Credit Spreads · 15% allocation</div>
+      <div class="s-card-pl pos" id="mp-pl">—</div>
+      <div class="s-card-row">
+        <span class="s-row-label">Account Contribution</span>
+        <span class="s-row-val" id="mp-ret">—</span>
+      </div>
+      <div class="s-card-row">
+        <span class="s-row-label">Win Rate</span>
+        <span class="s-row-val" id="mp-wr">—</span>
+      </div>
+      <div class="s-card-row">
+        <span class="s-row-label">Profit Factor</span>
+        <span class="s-row-val" id="mp-pf">—</span>
+      </div>
+      <div class="s-card-row">
+        <span class="s-row-label">Trades</span>
+        <span class="s-row-val" id="mp-tc">211</span>
+      </div>
+      <p id="mp-live" style="font-size:11px;color:#fbbf24;font-weight:600;margin-top:10px">*Live trading started in 2023</p>
+    </div>
+  </div>
+
+  <div class="balance-row">
+    <div class="bal-box">
+      <div class="bal-label">Starting Balance</div>
+      <div class="bal-val" id="start-bal">$75,000</div>
+    </div>
+    <div class="bal-box">
+      <div class="bal-label">Ending Balance</div>
+      <div class="bal-val pos" id="end-bal">—</div>
+    </div>
+    <div class="bal-box">
+      <div class="bal-label">Total Profit</div>
+      <div class="bal-val pos" id="net-pl">—</div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <div class="chart-title">Portfolio Balance Over Time</div>
+    <div class="chart-wrap">
+      <canvas id="chart-canvas"></canvas>
+    </div>
+  </div>
+
+  <div class="year-section panel" style="margin-top:20px">
+    <div class="panel-title">Year-by-Year Summary</div>
+    <div class="year-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>Trades</th>
+            <th>Portfolio Start</th>
+            <th>Portfolio End</th>
+            <th>Profit</th>
+            <th>Yearly Return</th>
+            <th>Total Return</th>
+          </tr>
+        </thead>
+        <tbody id="year-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <div class="disc-title">Important Disclaimer</div>
+    <ul>
+      <li><strong>Past performance is not indicative of future results.</strong> Returns shown are based on actual live trades and are provided for illustrative purposes only.</li>
+      <li>This calculator does not constitute financial advice, a solicitation, or an offer to buy or sell any security. It is educational in nature.</li>
+      <li>Options trading involves substantial risk of loss and is not appropriate for all investors. 1DTE and weekly SPX options strategies carry significant risk including total loss of premium.</li>
+      <li>"Trade Allocation" represents the portion of capital deployed per trade for each strategy. Actual margin requirements vary by trade and market conditions.</li>
+      <li>Phoenix strategy uses actual live trade margin data; Double Dip and Market Power use allocation percentage directly. Combined results reflect running all three strategies simultaneously.</li>
+      <li>Prior to trading options, please consult a licensed financial advisor and carefully read the <strong>Characteristics and Risks of Standardized Options (ODD)</strong>.</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+// ─── PHOENIX TRADES ───────────────────────────────────────────────────────────
+// pl = dollar P/L per 1 standard position; margin = capital at risk that day
+// P/L scaling: (allocation / 15000) * t.pl
+const STD_MARGIN = 15000;
+const PH = [
+  {year:2026,date:"Jan 2", pl:285,  margin:185},
+  {year:2026,date:"Jan 5", pl:480,  margin:7210},
+  {year:2026,date:"Jan 6", pl:-860, margin:6190},
+  {year:2026,date:"Jan 7", pl:265,  margin:8280},
+  {year:2026,date:"Jan 8", pl:325,  margin:13480},
+  {year:2026,date:"Jan 12",pl:-1065,margin:9500},
+  {year:2026,date:"Jan 13",pl:365,  margin:12950},
+  {year:2026,date:"Jan 14",pl:290,  margin:13010},
+  {year:2026,date:"Jan 15",pl:95,   margin:8910},
+  {year:2026,date:"Jan 16",pl:2025, margin:215},
+  {year:2026,date:"Jan 22",pl:360,  margin:10550},
+  {year:2026,date:"Jan 23",pl:525,  margin:14780},
+  {year:2026,date:"Jan 26",pl:125,  margin:11000},
+  {year:2026,date:"Jan 27",pl:510,  margin:8670},
+  {year:2026,date:"Jan 28",pl:270,  margin:260},
+  {year:2026,date:"Jan 29",pl:290,  margin:3020},
+  {year:2026,date:"Jan 30",pl:-1065,margin:24400},
+  {year:2026,date:"Feb 2", pl:1605, margin:12430},
+  {year:2026,date:"Feb 4", pl:675,  margin:295},
+  {year:2026,date:"Feb 9", pl:-1180,margin:8180},
+  {year:2026,date:"Feb 10",pl:350,  margin:10190},
+  {year:2026,date:"Feb 11",pl:770,  margin:200},
+  {year:2026,date:"Feb 13",pl:255,  margin:22620},
+  {year:2026,date:"Feb 17",pl:300,  margin:17250},
+  {year:2026,date:"Feb 18",pl:520,  margin:12860},
+  {year:2026,date:"Feb 19",pl:-1775,margin:16180},
+  {year:2026,date:"Feb 20",pl:615,  margin:16840},
+  {year:2026,date:"Feb 24",pl:285,  margin:14280},
+  {year:2026,date:"Feb 25",pl:-1630,margin:16560},
+  {year:2026,date:"Feb 26",pl:-260, margin:15000},
+  {year:2026,date:"Mar 2", pl:2140, margin:15000},
+  {year:2026,date:"Mar 3", pl:330,  margin:15000},
+  {year:2026,date:"Mar 4", pl:-1885,margin:15000},
+  {year:2026,date:"Mar 5", pl:230,  margin:360},
+  {year:2026,date:"Mar 6", pl:860,  margin:27650},
+  {year:2026,date:"Mar 9", pl:-1590,margin:24800},
+  {year:2026,date:"Mar 10",pl:485,  margin:17680},
+  {year:2026,date:"Mar 11",pl:295,  margin:23810},
+  {year:2026,date:"Mar 12",pl:-1765,margin:33270},
+  {year:2026,date:"Mar 16",pl:520,  margin:16590},
+  {year:2026,date:"Mar 17",pl:950,  margin:17660},
+  {year:2026,date:"Mar 18",pl:-1645,margin:20690},
+  {year:2026,date:"Mar 19",pl:-1725,margin:23550},
+  {year:2026,date:"Mar 24",pl:725,  margin:18030},
+  {year:2026,date:"Mar 25",pl:525,  margin:20780},
+  {year:2026,date:"Mar 30",pl:2420, margin:3930},
+  {year:2026,date:"Apr 1", pl:520,  margin:19330},
+  {year:2026,date:"Apr 2", pl:-1585,margin:28000},
+  {year:2026,date:"Apr 6", pl:705,  margin:19500},
+  {year:2026,date:"Apr 7", pl:1205, margin:435},
+  {year:2026,date:"Apr 9", pl:345,  margin:12230},
+  {year:2026,date:"Apr 10",pl:-285, margin:285},
+  {year:2026,date:"Apr 20",pl:565,  margin:11710},
+  {year:2026,date:"Apr 21",pl:500,  margin:20510},
+  {year:2026,date:"Apr 23",pl:380,  margin:15770},
+  {year:2026,date:"Apr 24",pl:240,  margin:13830},
+  {year:2026,date:"Apr 27",pl:560,  margin:15160},
+  {year:2026,date:"Apr 28",pl:-805, margin:11990},
+  {year:2026,date:"Apr 29",pl:440,  margin:16930},
+  {year:2026,date:"May 1", pl:1240, margin:13300},
+  {year:2026,date:"May 4", pl:240,  margin:16080},
+  {year:2026,date:"May 11",pl:305,  margin:16020},
+  {year:2026,date:"May 12",pl:335,  margin:10480},
+  {year:2026,date:"May 13",pl:-1175,margin:14740},
+  {year:2026,date:"May 18",pl:535,  margin:17820},
+  {year:2026,date:"May 19",pl:-1345,margin:15820},
+  {year:2026,date:"May 21",pl:-1440,margin:15280},
+  {year:2026,date:"May 26",pl:350,  margin:10410},
+  {year:2026,date:"May 27",pl:485,  margin:11420},
+  {year:2026,date:"May 28",pl:490,  margin:10550},
+  {year:2026,date:"May 29",pl:-1260,margin:12630},
+  {year:2026,date:"Jun 1", pl:555,  margin:9700},
+  {year:2026,date:"Jun 2", pl:345,  margin:12610},
+  {year:2026,date:"Jun 3", pl:325,  margin:9550},
+  {year:2026,date:"Jun 4", pl:600,  margin:210},
+  {year:2026,date:"Jun 8", pl:2750, margin:280},
+  {year:2026,date:"Jun 9", pl:1070, margin:22060},
+  {year:2026,date:"Jun 12",pl:705,  margin:325},
+  {year:2026,date:"Jun 16",pl:1065, margin:15950},
+  {year:2026,date:"Jun 22",pl:1570, margin:260},
+  {year:2026,date:"Jun 24",pl:-2205,margin:15320},
+  {year:2026,date:"Jun 25",pl:-1830,margin:14440},
+  {year:2026,date:"Jun 26",pl:285,  margin:18540},
+  {year:2026,date:"Jul 1", pl:590,  margin:11150},
+  {year:2026,date:"Jul 7", pl:515,  margin:17250},
+  {year:2026,date:"Jul 8", pl:255,  margin:14810},
+  {year:2026,date:"Jul 10",pl:315,  margin:11540},
+  {year:2026,date:"Jul 13",pl:-1370,margin:12490},
+  {year:2026,date:"Jul 14",pl:-1090,margin:9540},
+  {year:2026,date:"Jul 15",pl:380,  margin:8230},
+  {year:2026,date:"Jul 16",pl:895,  margin:235},
+  {year:2026,date:"Jul 20",pl:315,  margin:15430},
+  {year:2026,date:"Jul 22",pl:350,  margin:250},
+  {year:2026,date:"Jul 24",pl:240,  margin:13770},
+  {year:2026,date:"Jul 27",pl:205,  margin:12950},
+  {year:2026,date:"Jul 28",pl:320,  margin:290},
+  {year:2026,date:"Aug 6", pl:370,  margin:15710},
+  {year:2026,date:"Aug 7", pl:-985, margin:30240},
+  {year:2026,date:"Aug 10",pl:235,  margin:9330},
+  {year:2026,date:"Aug 11",pl:215,  margin:10590},
+  {year:2026,date:"Aug 12",pl:310,  margin:200},
+  {year:2026,date:"Aug 14",pl:175,  margin:9340},
+  {year:2026,date:"Aug 17",pl:360,  margin:13540},
+];
+
+
+// ─── DOUBLE DIP TRADES ────────────────────────────────────────────────────────
+// margin = required margin per contract; P/L = floor(size/margin) * margin * roi/100
+const DD = [
+  {year:2026,date:"Feb 18",roi:6.45, margin:465},
+  {year:2026,date:"Feb 23",roi:6.45, margin:465},
+  {year:2026,date:"Mar 5", roi:6.45, margin:465},
+  {year:2026,date:"Mar 23",roi:6.42, margin:935},
+  {year:2026,date:"Mar 26",roi:5.32, margin:470},
+  {year:2026,date:"Mar 31",roi:7.61, margin:460},
+  {year:2026,date:"Apr 2", roi:5.32, margin:470},
+  {year:2026,date:"Apr 8", roi:6.45, margin:465},
+  {year:2026,date:"Apr 14",roi:5.32, margin:470},
+  {year:2026,date:"Apr 17",roi:8.15, margin:920},
+  {year:2026,date:"May 6", roi:6.09, margin:460},
+  {year:2026,date:"May 8", roi:6.38, margin:470},
+  {year:2026,date:"May 14",roi:6.45, margin:465},
+  {year:2026,date:"May 15",roi:5.32, margin:470},
+  {year:2026,date:"May 20",roi:7.61, margin:460},
+  {year:2026,date:"May 26",roi:7.61, margin:460},
+  {year:2026,date:"Jun 5", roi:-100,   margin:470},
+  {year:2026,date:"Jun 9", roi:7.61, margin:460},
+  {year:2026,date:"Jun 9", roi:12.50, margin:440},
+  {year:2026,date:"Jun 10",roi:-49.68, margin:465},
+  {year:2026,date:"Jun 11",roi:11.11, margin:450},
+  {year:2026,date:"Jun 15",roi:8.79, margin:455},
+  {year:2026,date:"Jun 18",roi:5.32, margin:470},
+  {year:2026,date:"Jun 23",roi:6.38, margin:470},
+  {year:2026,date:"Jun 29",roi:6.45, margin:465},
+  {year:2026,date:"Jul 6", roi:7.61, margin:460},
+  {year:2026,date:"Jul 9", roi:7.61, margin:460},
+  {year:2026,date:"Jul 21",roi:7.61, margin:460},
+  {year:2026,date:"Jul 23",roi:7.61, margin:460},
+  {year:2026,date:"Jul 29",roi:7.61, margin:460},
+  {year:2026,date:"Jul 30",roi:6.45, margin:465},
+  {year:2026,date:"Aug 3", roi:5.26, margin:475},
+  {year:2026,date:"Aug 4", roi:6.38, margin:470},
+  {year:2026,date:"Aug 13",roi:12.50, margin:440},
+];
+
+// ─── MARKET POWER TRADES ──────────────────────────────────────────────────────
+// roi = % return on allocated capital; P/L = allocation * roi/100
+const MP = [
+  {year:2023,date:"Jan 5",  roi:7.50},{year:2023,date:"Jan 6",  roi:6.30},
+  {year:2023,date:"Jan 11", roi:5.20},{year:2023,date:"Jan 18", roi:5.20},
+  {year:2023,date:"Jan 20", roi:6.30},{year:2023,date:"Jan 26", roi:5.20},
+  {year:2023,date:"Jan 30", roi:7.50},{year:2023,date:"Jan 31", roi:6.30},
+  {year:2023,date:"Feb 1",  roi:5.20},{year:2023,date:"Feb 2",  roi:6.30},
+  {year:2023,date:"Feb 3",  roi:6.30},{year:2023,date:"Feb 7",  roi:5.20},
+  {year:2023,date:"Feb 8",  roi:5.20},{year:2023,date:"Feb 13", roi:5.20},
+  {year:2023,date:"Feb 16", roi:5.20},{year:2023,date:"Feb 21", roi:6.30},
+  {year:2023,date:"Feb 24", roi:5.20},{year:2023,date:"Mar 3",  roi:5.20},
+  {year:2023,date:"Mar 7",  roi:5.20},{year:2023,date:"Mar 9",  roi:5.20},
+  {year:2023,date:"Mar 10", roi:5.20},{year:2023,date:"Mar 14", roi:5.20},
+  {year:2023,date:"Mar 16", roi:5.20},{year:2023,date:"Mar 17", roi:5.20},
+  {year:2023,date:"Mar 21", roi:5.20},{year:2023,date:"Mar 22", roi:6.30},
+  {year:2023,date:"Mar 29", roi:5.20},{year:2023,date:"Mar 31", roi:5.82},
+  {year:2023,date:"Apr 13", roi:5.20},{year:2023,date:"Apr 20", roi:5.20},
+  {year:2023,date:"Apr 26", roi:5.20},{year:2023,date:"Apr 27", roi:6.30},
+  {year:2023,date:"May 2",  roi:5.20},{year:2023,date:"May 5",  roi:6.30},
+  {year:2023,date:"May 17", roi:3.10},{year:2023,date:"May 23", roi:6.30},
+  {year:2023,date:"May 25", roi:6.30},{year:2023,date:"Jun 2",  roi:6.30},
+  {year:2023,date:"Jun 12", roi:5.20},{year:2023,date:"Jun 15", roi:5.20},
+  {year:2023,date:"Jun 27", roi:5.20},{year:2023,date:"Jul 6",  roi:5.20},
+  {year:2023,date:"Jul 12", roi:5.20},{year:2023,date:"Jul 13", roi:5.20},
+  {year:2023,date:"Jul 18", roi:5.20},{year:2023,date:"Jul 20", roi:5.20},
+  {year:2023,date:"Jul 28", roi:5.20},{year:2023,date:"Aug 2",  roi:5.20},
+  {year:2023,date:"Aug 7",  roi:7.60},{year:2023,date:"Aug 15", roi:5.20},
+  {year:2023,date:"Aug 23", roi:5.20},{year:2023,date:"Aug 29", roi:5.20},
+  {year:2023,date:"Sep 6",  roi:6.45},{year:2023,date:"Sep 14", roi:5.20},
+  {year:2023,date:"Sep 15", roi:5.20},{year:2023,date:"Sep 20", roi:3.20},
+  {year:2023,date:"Oct 3",  roi:5.20},{year:2023,date:"Oct 6",  roi:5.20},
+  {year:2023,date:"Oct 16", roi:5.20},{year:2023,date:"Oct 18", roi:5.20},
+  {year:2023,date:"Oct 20", roi:5.20},{year:2023,date:"Oct 25", roi:5.20},
+  {year:2023,date:"Oct 26", roi:6.30},{year:2023,date:"Oct 30", roi:5.20},
+  {year:2023,date:"Nov 1",  roi:-12.50},{year:2023,date:"Nov 9",  roi:5.20},
+  {year:2023,date:"Nov 10", roi:5.20},{year:2023,date:"Nov 15", roi:5.20},
+  {year:2023,date:"Nov 21", roi:5.20},{year:2023,date:"Dec 20", roi:5.20},
+  {year:2023,date:"Dec 21", roi:5.20},
+  {year:2024,date:"Jan 2",  roi:5.20},{year:2024,date:"Jan 3",  roi:5.20},
+  {year:2024,date:"Jan 8",  roi:5.20},{year:2024,date:"Jan 18", roi:-63.00},
+  {year:2024,date:"Feb 1",  roi:5.20},{year:2024,date:"Feb 7",  roi:5.20},
+  {year:2024,date:"Feb 13", roi:5.20},{year:2024,date:"Feb 14", roi:2.13},
+  {year:2024,date:"Feb 22", roi:6.45},{year:2024,date:"Mar 1",  roi:5.20},
+  {year:2024,date:"Mar 5",  roi:5.20},{year:2024,date:"Mar 7",  roi:5.20},
+  {year:2024,date:"Mar 12", roi:5.20},{year:2024,date:"Mar 27", roi:5.38},
+  {year:2024,date:"Apr 5",  roi:5.20},{year:2024,date:"Apr 10", roi:5.20},
+  {year:2024,date:"Apr 11", roi:5.20},{year:2024,date:"Apr 15", roi:5.20},
+  {year:2024,date:"Apr 19", roi:5.20},{year:2024,date:"Apr 22", roi:-2.90},
+  {year:2024,date:"Apr 25", roi:4.00},{year:2024,date:"Apr 26", roi:5.20},
+  {year:2024,date:"May 2",  roi:6.40},{year:2024,date:"May 3",  roi:4.26},
+  {year:2024,date:"May 6",  roi:2.13},{year:2024,date:"May 15", roi:2.14},
+  {year:2024,date:"May 23", roi:5.32},{year:2024,date:"Jun 5",  roi:6.45},
+  {year:2024,date:"Jun 17", roi:5.32},{year:2024,date:"Jul 10", roi:5.32},
+  {year:2024,date:"Jul 11", roi:5.32},{year:2024,date:"Jul 12", roi:5.32},
+  {year:2024,date:"Jul 17", roi:5.32},{year:2024,date:"Jul 18", roi:4.26},
+  {year:2024,date:"Jul 22", roi:4.26},{year:2024,date:"Jul 25", roi:5.85},
+  {year:2024,date:"Jul 26", roi:5.85},{year:2024,date:"Aug 1",  roi:-38.00},
+  {year:2024,date:"Aug 6",  roi:5.32},{year:2024,date:"Aug 8",  roi:5.32},
+  {year:2024,date:"Aug 13", roi:5.32},{year:2024,date:"Aug 15", roi:5.32},
+  {year:2024,date:"Aug 22", roi:5.26},{year:2024,date:"Aug 23", roi:5.32},
+  {year:2024,date:"Sep 3",  roi:5.32},{year:2024,date:"Sep 6",  roi:5.32},
+  {year:2024,date:"Sep 9",  roi:5.32},{year:2024,date:"Sep 10", roi:5.38},
+  {year:2024,date:"Sep 19", roi:5.32},{year:2024,date:"Oct 1",  roi:4.21},
+  {year:2024,date:"Oct 7",  roi:5.32},{year:2024,date:"Oct 8",  roi:4.21},
+  {year:2024,date:"Oct 31", roi:5.32},{year:2024,date:"Nov 7",  roi:5.32},
+  {year:2024,date:"Nov 15", roi:5.32},{year:2024,date:"Dec 11", roi:6.45},
+  {year:2024,date:"Dec 20", roi:5.32},{year:2024,date:"Dec 27", roi:5.32},
+  {year:2024,date:"Dec 30", roi:5.32},
+  {year:2025,date:"Jan 3",  roi:-1.28},{year:2025,date:"Jan 7",  roi:5.32},
+  {year:2025,date:"Jan 10", roi:5.32},{year:2025,date:"Jan 15", roi:5.32},
+  {year:2025,date:"Jan 21", roi:4.30},{year:2025,date:"Jan 27", roi:6.45},
+  {year:2025,date:"Jan 28", roi:5.32},{year:2025,date:"Feb 7",  roi:5.32},
+  {year:2025,date:"Feb 13", roi:5.32},{year:2025,date:"Feb 21", roi:5.32},
+  {year:2025,date:"Feb 27", roi:5.32},{year:2025,date:"Feb 28", roi:5.32},
+  {year:2025,date:"Mar 3",  roi:5.32},{year:2025,date:"Mar 5",  roi:5.32},
+  {year:2025,date:"Mar 10", roi:5.32},{year:2025,date:"Mar 14", roi:5.32},
+  {year:2025,date:"Mar 24", roi:5.32},{year:2025,date:"Mar 26", roi:5.32},
+  {year:2025,date:"Mar 28", roi:4.20},{year:2025,date:"Apr 3",  roi:-16.90},
+  {year:2025,date:"Apr 16", roi:5.32},{year:2025,date:"Apr 21", roi:5.32},
+  {year:2025,date:"Apr 22", roi:5.32},{year:2025,date:"Apr 23", roi:3.19},
+  {year:2025,date:"Apr 24", roi:5.32},{year:2025,date:"May 2",  roi:5.32},
+  {year:2025,date:"May 21", roi:5.32},{year:2025,date:"May 27", roi:5.32},
+  {year:2025,date:"Jun 6",  roi:5.32},{year:2025,date:"Jun 24", roi:5.32},
+  {year:2025,date:"Jun 26", roi:4.26},{year:2025,date:"Jul 7",  roi:5.32},
+  {year:2025,date:"Aug 1",  roi:5.32},{year:2025,date:"Aug 4",  roi:5.32},
+  {year:2025,date:"Aug 8",  roi:5.32},{year:2025,date:"Aug 12", roi:5.32},
+  {year:2025,date:"Aug 22", roi:5.32},{year:2025,date:"Sep 12", roi:5.32},
+  {year:2025,date:"Oct 10", roi:5.32},{year:2025,date:"Oct 13", roi:5.32},
+  {year:2025,date:"Oct 20", roi:6.45},{year:2025,date:"Oct 24", roi:-4.47},
+  {year:2025,date:"Oct 30", roi:5.32},{year:2025,date:"Nov 4",  roi:5.32},
+  {year:2025,date:"Nov 6",  roi:4.26},{year:2025,date:"Nov 10", roi:5.32},
+  {year:2025,date:"Nov 13", roi:5.32},{year:2025,date:"Nov 20", roi:5.32},
+  {year:2025,date:"Nov 21", roi:4.26},{year:2025,date:"Dec 12", roi:5.32},
+  {year:2025,date:"Dec 17", roi:5.32},{year:2025,date:"Dec 18", roi:5.32},
+  {year:2025,date:"Dec 19", roi:3.20},
+  {year:2026,date:"Jan 9",  roi:6.45},{year:2026,date:"Jan 20", roi:5.32},
+  {year:2026,date:"Jan 21", roi:5.32},{year:2026,date:"Feb 3",  roi:5.32},
+  {year:2026,date:"Feb 5",  roi:5.32},{year:2026,date:"Feb 6",  roi:5.32},
+  {year:2026,date:"Feb 12", roi:5.32},{year:2026,date:"Feb 23", roi:5.32},
+  {year:2026,date:"Mar 12", roi:5.32},{year:2026,date:"Mar 20", roi:5.32},
+  {year:2026,date:"Mar 23", roi:5.32},{year:2026,date:"Mar 26", roi:1.06},
+  {year:2026,date:"Mar 27", roi:5.32},{year:2026,date:"Mar 31", roi:4.26},
+  {year:2026,date:"Apr 8",  roi:6.45},{year:2026,date:"Apr 13", roi:0.35},
+  {year:2026,date:"Apr 14", roi:6.38},{year:2026,date:"Apr 17", roi:6.45},
+  {year:2026,date:"Apr 22", roi:5.32},{year:2026,date:"Apr 29", roi:5.32},
+  {year:2026,date:"May 5",  roi:0.67},{year:2026,date:"May 14", roi:5.32},
+  {year:2026,date:"May 15", roi:5.32},{year:2026,date:"May 20", roi:5.32},
+  {year:2026,date:"Jun 5",  roi:5.32},{year:2026,date:"Jun 10", roi:5.32},
+  {year:2026,date:"Jun 11", roi:5.32},{year:2026,date:"Jun 15", roi:5.32},
+  {year:2026,date:"Jun 23", roi:5.32},{year:2026,date:"Jun 29", roi:3.19},
+  {year:2026,date:"Jul 6",  roi:7.60},{year:2026,date:"Jul 9",  roi:5.32},
+  {year:2026,date:"Jul 17", roi:6.45},{year:2026,date:"Jul 21", roi:7.52},
+  {year:2026,date:"Jul 23", roi:7.60},{year:2026,date:"Jul 29", roi:6.45},
+  {year:2026,date:"Jul 30", roi:6.45},
+  {year:2026,date:"Jul 31", roi:-1.21},
+  {year:2026,date:"Aug 3",  roi:0.31},
+  {year:2026,date:"Aug 13", roi:5.32},
+];
+
+// ─── Merge and sort ───────────────────────────────────────────────────────────
+var MONTH = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+function parseDate(t) {
+  var p = t.date.split(' ');
+  return new Date(t.year, MONTH[p[0]], parseInt(p[1]));
+}
+
+var ALL = [];
+PH.forEach(function(t){ ALL.push(Object.assign({s:'ph'}, t)); });
+DD.forEach(function(t){ ALL.push(Object.assign({s:'dd'}, t)); });
+MP.forEach(function(t){ ALL.push(Object.assign({s:'mp'}, t)); });
+ALL.sort(function(a,b){ return parseDate(a) - parseDate(b); });
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmt$(n) {
+  var prefix = n < 0 ? '-$' : '$';
+  var abs = Math.abs(n);
+  if (abs >= 1e6) return prefix + (abs/1e6).toFixed(2) + 'M';
+  return prefix + Math.round(abs).toLocaleString('en-US');
+}
+function fmtSgn$(n) { return (n >= 0 ? '+' : '') + fmt$(n).replace('-','-'); }
+function fmtPct(n) { return (n >= 0 ? '+' : '') + n.toFixed(1) + '%'; }
+
+// ─── Main compute ─────────────────────────────────────────────────────────────
+function compute() {
+  var balance  = parseInt(document.getElementById('balance-slider').value);
+  var phPct    = parseInt(document.getElementById('ph-slider').value);
+  var ddPct    = parseInt(document.getElementById('dd-slider').value);
+  var mpPct    = parseInt(document.getElementById('mp-slider').value);
+  var isComp   = document.getElementById('mode-compound').classList.contains('active');
+
+  var phFixed  = Math.round(balance * phPct / 100);
+  var ddFixed  = Math.round(balance * ddPct / 100);
+  var mpFixed  = Math.round(balance * mpPct / 100);
+
+  var bal = balance;
+  var ph = {pl:0, wins:0, trades:0, gains:0, losses:0};
+  var dd = {pl:0, wins:0, trades:0, gains:0, losses:0};
+  var mp = {pl:0, wins:0, trades:0, gains:0, losses:0};
+  var allWins = 0, allTrades = 0, allGains = 0, allLosses = 0;
+  var yearData = {};
+  var chartPts = [{d: parseDate({year:ALL[0].year, date:'Jan 1'}), b: bal}];
+
+  ALL.forEach(function(t) {
+    var size, pl, s;
+    if (t.s === 'ph') {
+      size = isComp ? Math.round(bal * phPct / 100) : phFixed;
+      pl   = size / STD_MARGIN * t.pl;
+      s    = ph;
+    } else if (t.s === 'dd') {
+      size = isComp ? Math.round(bal * ddPct / 100) : ddFixed;
+      var ddContracts = Math.max(1, Math.floor(size / t.margin));
+      pl   = ddContracts * t.margin * (t.roi / 100);
+      s    = dd;
+    } else {
+      size = isComp ? Math.round(bal * mpPct / 100) : mpFixed;
+      pl   = size * t.roi / 100;
+      s    = mp;
+    }
+
+    bal += pl;
+    s.pl += pl; s.trades++;
+    allTrades++;
+
+    if (pl > 0)  { s.wins++; s.gains += pl; allWins++; allGains += pl; }
+    else if (pl < 0) { s.losses += -pl; allLosses += -pl; }
+
+    var yr = t.year;
+    if (!yearData[yr]) yearData[yr] = {pl:0, trades:0, start: bal - pl};
+    yearData[yr].pl += pl;
+    yearData[yr].trades++;
+    yearData[yr].end = bal;
+
+    chartPts.push({d: parseDate(t), b: bal});
+  });
+
+  // ── Portfolio summary
+  var netPl    = bal - balance;
+  var pctGain  = netPl / balance * 100;
+  var portPF   = allLosses > 0 ? allGains / allLosses : 9.99;
+  var winRate  = (allWins / allTrades * 100).toFixed(1);
+
+  var portRetEl = document.getElementById('port-return');
+  portRetEl.textContent = fmtPct(pctGain);
+  portRetEl.className = 'stat-value ' + (netPl >= 0 ? 'pos' : 'neg');
+
+  var portProfEl = document.getElementById('port-profit');
+  portProfEl.textContent = fmtSgn$(netPl);
+  portProfEl.className = 'stat-value ' + (netPl >= 0 ? 'pos' : 'neg');
+
+  document.getElementById('port-trades').textContent = allTrades;
+  document.getElementById('port-winrate').textContent = winRate + '%';
+
+  // ── Balance boxes
+  document.getElementById('start-bal').textContent = fmt$(balance);
+  var endEl = document.getElementById('end-bal');
+  endEl.textContent = fmt$(bal);
+  endEl.className = 'bal-val ' + (bal >= balance ? 'pos' : 'neg');
+  var netEl = document.getElementById('net-pl');
+  netEl.textContent = fmtSgn$(netPl);
+  netEl.className = 'bal-val ' + (netPl >= 0 ? 'pos' : 'neg');
+
+  // ── Per-strategy cards
+  function updateCard(prefix, stats, pct, name) {
+    var plEl = document.getElementById(prefix + '-pl');
+    plEl.textContent = fmtSgn$(stats.pl);
+    plEl.className = 's-card-pl ' + (stats.pl >= 0 ? 'pos' : 'neg');
+    var retPct = stats.pl / balance * 100;
+    document.getElementById(prefix + '-ret').textContent = (retPct >= 0 ? '+' : '') + retPct.toFixed(1) + '%';
+    var wr = stats.trades > 0 ? (stats.wins / stats.trades * 100).toFixed(0) : 0;
+    document.getElementById(prefix + '-wr').textContent = wr + '%';
+    var pf = stats.losses > 0 ? (stats.gains / stats.losses).toFixed(2) : '—';
+    document.getElementById(prefix + '-pf').textContent = pf + (pf !== '—' ? 'x' : '');
+    document.getElementById(prefix + '-tc').textContent = stats.trades;
+    document.getElementById(prefix + '-alloc-label').textContent =
+      name + ' · ' + pct + '% allocation';
+  }
+  updateCard('ph', ph, phPct, '1DTE SPX');
+  updateCard('dd', dd, ddPct, 'Weekly SPX');
+  updateCard('mp', mp, mpPct, 'SPX Credit Spreads');
+
+  document.getElementById('ph-live').textContent = '*Live trading started in ' + Math.min.apply(null, PH.map(function(t){ return t.year; }));
+  document.getElementById('dd-live').textContent = '*Live trading started in ' + Math.min.apply(null, DD.map(function(t){ return t.year; }));
+  document.getElementById('mp-live').textContent = '*Live trading started in ' + Math.min.apply(null, MP.map(function(t){ return t.year; }));
+
+  // ── Year table
+  var tbody = document.getElementById('year-tbody');
+  tbody.innerHTML = '';
+  var sortedYears = Object.keys(yearData).sort();
+  var cumPl = 0;
+  var cumByYear = {};
+  sortedYears.forEach(function(yr) { cumPl += yearData[yr].pl; cumByYear[yr] = cumPl; });
+  sortedYears.slice().reverse().forEach(function(yr) {
+    var y = yearData[yr];
+    var ret = y.pl / balance * 100;
+    var cumRet = cumByYear[yr] / balance * 100;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="color:#94a3b8;font-weight:600">' + yr + '</td>' +
+      '<td style="color:#94a3b8">' + y.trades + '</td>' +
+      '<td style="color:#94a3b8">' + fmt$(y.start) + '</td>' +
+      '<td style="color:#94a3b8">' + fmt$(y.end) + '</td>' +
+      '<td class="' + (y.pl >= 0 ? 'td-gain' : 'td-loss') + '">' + fmtSgn$(y.pl) + '</td>' +
+      '<td class="' + (ret >= 0 ? 'td-gain' : 'td-loss') + '">' + fmtPct(ret) + '</td>' +
+      '<td class="' + (cumRet >= 0 ? 'td-gain' : 'td-loss') + '">' + fmtPct(cumRet) + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  // ── Allocation display
+  document.getElementById('alloc-total').innerHTML =
+    'Total deployed: <span id="total-pct">' + (phPct + ddPct + mpPct) + '% of account</span>';
+
+  // ── Chart
+  drawChart(chartPts, balance);
+}
+
+// ─── Chart ────────────────────────────────────────────────────────────────────
+function drawChart(pts, startBal) {
+  var canvas = document.getElementById('chart-canvas');
+  var wrap   = canvas.parentElement;
+  var W = wrap.clientWidth - 32;
+  var H = 200;
+  canvas.width  = W;
+  canvas.height = H;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  if (pts.length < 2) return;
+
+  var minB = Infinity, maxB = -Infinity;
+  pts.forEach(function(p){ minB = Math.min(minB, p.b); maxB = Math.max(maxB, p.b); });
+  var pad = (maxB - minB) * 0.08 || startBal * 0.05;
+  minB -= pad; maxB += pad;
+
+  var PAD_L = 64, PAD_R = 16, PAD_T = 12, PAD_B = 28;
+  var cW = W - PAD_L - PAD_R, cH = H - PAD_T - PAD_B;
+
+  var t0 = pts[0].d.getTime(), t1 = pts[pts.length-1].d.getTime();
+  function xOf(d)  { return PAD_L + (d.getTime()-t0)/(t1-t0||1) * cW; }
+  function yOf(b)  { return PAD_T + (1-(b-minB)/(maxB-minB)) * cH; }
+
+  // Grid lines + y labels
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'right';
+  var steps = 4;
+  for (var i = 0; i <= steps; i++) {
+    var v = minB + (maxB-minB)*i/steps;
+    var y = yOf(v);
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W-PAD_R, y); ctx.stroke();
+    ctx.fillStyle = '#475569';
+    ctx.fillText(fmt$(v), PAD_L - 6, y + 3.5);
+  }
+
+  // Baseline
+  var baseY = yOf(startBal);
+  ctx.strokeStyle = 'rgba(100,116,139,.4)';
+  ctx.setLineDash([4,4]);
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD_L, baseY); ctx.lineTo(W-PAD_R, baseY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // X axis labels (years)
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#475569';
+  var years = {};
+  pts.forEach(function(p){
+    var yr = p.d.getFullYear();
+    if (!years[yr]) { years[yr] = p.d; }
+  });
+  Object.keys(years).sort().forEach(function(yr){
+    var x = xOf(years[yr]);
+    ctx.fillText(yr, x, H - 6);
+  });
+
+  // Gradient fill
+  var grad = ctx.createLinearGradient(0, PAD_T, 0, H - PAD_B);
+  grad.addColorStop(0, 'rgba(139,92,246,.25)');
+  grad.addColorStop(0.5, 'rgba(16,185,129,.12)');
+  grad.addColorStop(1, 'rgba(59,130,246,.03)');
+  ctx.beginPath();
+  ctx.moveTo(xOf(pts[0].d), yOf(pts[0].b));
+  pts.forEach(function(p){ ctx.lineTo(xOf(p.d), yOf(p.b)); });
+  ctx.lineTo(xOf(pts[pts.length-1].d), H - PAD_B);
+  ctx.lineTo(xOf(pts[0].d), H - PAD_B);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(xOf(pts[0].d), yOf(pts[0].b));
+  pts.forEach(function(p){ ctx.lineTo(xOf(p.d), yOf(p.b)); });
+  ctx.strokeStyle = '#818cf8';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // End dot
+  var lastPt = pts[pts.length-1];
+  ctx.beginPath();
+  ctx.arc(xOf(lastPt.d), yOf(lastPt.b), 4, 0, Math.PI*2);
+  ctx.fillStyle = '#818cf8';
+  ctx.fill();
+}
+
+// ─── Slider utilities ─────────────────────────────────────────────────────────
+function updateSliderFill(el, min, max) {
+  var pct = (el.value - min) / (max - min) * 100;
+  el.style.setProperty('--pct', pct + '%');
+}
+
+function initSlider(id, displayId, dollarId, prefix, formatter) {
+  var sl = document.getElementById(id);
+  var disp = document.getElementById(displayId);
+  var dollar = dollarId ? document.getElementById(dollarId) : null;
+
+  function update() {
+    updateSliderFill(sl, sl.min, sl.max);
+    if (formatter) disp.textContent = formatter(parseInt(sl.value));
+    compute();
+  }
+  sl.addEventListener('input', function() {
+    var bal = parseInt(document.getElementById('balance-slider').value);
+    var v = parseInt(sl.value);
+    if (displayId === 'bal-display') {
+      disp.textContent = fmt$(v);
+      document.getElementById('start-bal').textContent = fmt$(v);
+    } else {
+      var amt = Math.round(bal * v / 100);
+      disp.innerHTML = v + '% &nbsp;<span style="color:#64748b;font-size:11px">$' + amt.toLocaleString('en-US') + '</span>';
+      if (dollar) dollar.textContent = '$' + amt.toLocaleString('en-US');
+    }
+    updateSliderFill(sl, sl.min, sl.max);
+    compute();
+  });
+  // Init fill
+  updateSliderFill(sl, sl.min, sl.max);
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  initSlider('balance-slider', 'bal-display', null, 'main', null);
+  initSlider('ph-slider', 'ph-display', 'ph-dollar', 'ph', null);
+  initSlider('dd-slider', 'dd-display', 'dd-dollar', 'dd', null);
+  initSlider('mp-slider', 'mp-display', 'mp-dollar', 'mp', null);
+
+  document.getElementById('mode-fixed').addEventListener('click', function() {
+    this.classList.add('active');
+    document.getElementById('mode-compound').classList.remove('active');
+    compute();
+  });
+  document.getElementById('mode-compound').addEventListener('click', function() {
+    this.classList.add('active');
+    document.getElementById('mode-fixed').classList.remove('active');
+    compute();
+  });
+
+  window.addEventListener('resize', function() {
+    compute();
+  });
+
+  compute();
+});
+</script>
+<script>
+(function() {
+  function sendHeight() {
+    window.parent.postMessage({ iframeHeight: document.body.scrollHeight }, '*');
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  new ResizeObserver(sendHeight).observe(document.body);
+})();
+</script>
+</body>
+</html>

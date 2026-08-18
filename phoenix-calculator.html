@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phoenix Returns Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #160d2a 50%, #0f172a 100%);
+    border-bottom: 1px solid #1e293b;
+    padding: 40px 24px 36px;
+    text-align: center;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(139,92,246,0.15);
+    border: 1px solid rgba(139,92,246,0.4);
+    color: #a78bfa;
+    font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 18px;
+  }
+  .hero h1 { font-size: clamp(26px,5vw,48px); font-weight: 800; line-height: 1.15; margin-bottom: 14px; }
+  .hero h1 span { color: #8b5cf6; }
+  .hero p { color: #94a3b8; font-size: clamp(14px,2vw,17px); max-width: 620px; margin: 0 auto; line-height: 1.6; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 20px 60px; }
+
+  .stat-bar {
+    display: grid; grid-template-columns: repeat(5,1fr); gap: 1px;
+    background: #1e293b; border: 1px solid #1e293b; border-radius: 16px;
+    overflow: hidden; margin: 28px 0;
+  }
+  .stat-item { background: #0f172a; padding: 20px 14px; text-align: center; }
+  .stat-value { font-size: clamp(18px,3vw,28px); font-weight: 800; color: #8b5cf6; line-height: 1.1; }
+  .stat-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .1em; margin-top: 5px; }
+
+  .controls { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+  .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 24px; }
+  .field-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .1em; display: block; margin-bottom: 8px; }
+  .amount-display { font-size: clamp(28px,4vw,40px); font-weight: 800; color: #f8fafc; line-height: 1; margin-bottom: 14px; }
+  .sub-display { font-size: 15px; color: #64748b; margin-top: 8px; line-height: 1.4; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px; background: #334155; border-radius: 3px; outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #8b5cf6; border: 2px solid #fff; cursor: pointer;
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.25);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%; background: #8b5cf6; border: 2px solid #fff; cursor: pointer;
+  }
+  .range-labels { display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-top: 6px; }
+
+  .mode-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .mode-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .1em; white-space: nowrap; }
+  .mode-btn {
+    background: #1e293b; border: 1px solid #334155; color: #94a3b8;
+    padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+  }
+  .mode-btn.active { background: #8b5cf6; border-color: #8b5cf6; color: #fff; }
+  .mode-btn:hover:not(.active) { border-color: #8b5cf6; color: #8b5cf6; }
+
+  .result-card {
+    background: linear-gradient(135deg, #1a0d2e 0%, #140d24 100%);
+    border: 1px solid #8b5cf6; border-radius: 16px; padding: 32px;
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 24px;
+    text-align: center; margin-bottom: 24px;
+  }
+  .result-main { font-size: clamp(28px,5vw,48px); font-weight: 800; color: #8b5cf6; }
+  .result-sub { font-size: clamp(18px,3vw,28px); font-weight: 700; color: #f8fafc; }
+  .result-loss { color: #f87171; }
+  .result-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: .08em; margin-top: 6px; }
+
+  .chart-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+  .chart-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 16px; }
+  canvas { width: 100% !important; border-radius: 8px; }
+
+  .table-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 24px; margin-bottom: 24px; overflow-x: auto; }
+  .table-card table { width: 100%; border-collapse: collapse; min-width: 600px; }
+  .table-card th { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .08em; padding: 10px 12px; text-align: left; border-bottom: 1px solid #334155; white-space: nowrap; }
+  .table-card td { padding: 14px 12px; font-size: 14px; border-bottom: 1px solid #1e3a5f; }
+  .table-card tr:last-child td { border-bottom: none; }
+  .td-gain { color: #a78bfa; font-weight: 600; }
+  .td-loss { color: #f87171; font-weight: 600; }
+
+  .toggle-trades { width: 100%; background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 16px; transition: all .15s; }
+  .toggle-trades:hover { border-color: #8b5cf6; color: #8b5cf6; }
+
+  .trade-list { display: none; background: #1e293b; border: 1px solid #334155; border-radius: 16px; overflow: hidden; margin-bottom: 24px; }
+  .trade-list table { width: 100%; border-collapse: collapse; min-width: 500px; }
+  .trade-list th { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .08em; padding: 12px 14px; border-bottom: 1px solid #334155; white-space: nowrap; }
+  .trade-list td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid #0f172a; }
+
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .pill-win { background: rgba(167,139,250,.15); color: #a78bfa; }
+  .pill-loss { background: rgba(248,113,113,.15); color: #f87171; }
+  .pill-lotto { background: rgba(251,191,36,.15); color: #fbbf24; }
+
+  .disclaimer { background: #0f172a; border: 1px solid #334155; border-left: 4px solid #f59e0b; border-radius: 12px; padding: 22px 24px; font-size: 13px; color: #94a3b8; line-height: 1.8; margin-top: 32px; }
+  .disclaimer strong { color: #f59e0b; font-size: 14px; }
+  .disclaimer ul { margin: 10px 0 0 0; padding-left: 18px; }
+  .disclaimer li { margin-bottom: 6px; }
+
+  @media (max-width: 640px) {
+    .stat-bar { grid-template-columns: repeat(3,1fr); }
+    .controls-grid { grid-template-columns: 1fr; gap: 20px; }
+    .result-card { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">Live Trading Data</div>
+  <h1>Phoenix <span>Returns Calculator</span></h1>
+  <p>See how your account could have performed following our 1DTE SPX options strategy — live trades from January 2026.</p>
+</div>
+
+<div class="container">
+  <div class="stat-bar">
+    <div class="stat-item">
+      <div class="stat-value" id="trade-roi-display">—</div>
+      <div class="stat-label">Profit Factor</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="total-roi-display">—</div>
+      <div class="stat-label">Account Return</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="total-trades-display">—</div>
+      <div class="stat-label">Total Trades</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="win-rate-display">—</div>
+      <div class="stat-label">Win Rate</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="live-since-display" style="font-size:20px">—</div>
+      <div class="stat-label">Live Since</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="controls-grid">
+      <div>
+        <label class="field-label">Starting Account Balance</label>
+        <div class="amount-display" id="balance-display">$75,000</div>
+        <input type="range" id="balance-slider" min="15000" max="500000" step="5000" value="75000">
+        <div class="range-labels"><span>$5k</span><span>$500k</span></div>
+      </div>
+      <div>
+        <label class="field-label">Trade Allocation (% of Account)</label>
+        <div class="amount-display" id="pct-display">20%</div>
+        <input type="range" id="pct-slider" min="1" max="50" step="1" value="20">
+        <div class="range-labels"><span>1%</span><span>50%</span></div>
+        <div id="trade-size-display" class="sub-display"></div>
+      </div>
+    </div>
+    <div class="mode-row">
+      <span class="mode-label">Growth Mode:</span>
+      <button class="mode-btn" id="mode-fixed">Fixed Amount</button>
+      <button class="mode-btn active" id="mode-compound">Compounding</button>
+    </div>
+  </div>
+
+  <div class="result-card">
+    <div>
+      <div class="result-main" id="ending-balance">—</div>
+      <div class="result-label">Ending Balance</div>
+    </div>
+    <div>
+      <div class="result-sub" id="total-gain">—</div>
+      <div class="result-label">Total Profit</div>
+    </div>
+    <div>
+      <div class="result-sub" id="pct-gain">—</div>
+      <div class="result-label">Return on Account</div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Account Balance Over Time</div>
+    <canvas id="chart" height="220"></canvas>
+  </div>
+
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Year</th><th>Trades</th><th>Wins</th><th>Losses</th>
+          <th>Win Rate</th><th>Account Start</th><th>Account End</th>
+          <th>Profit</th><th>Yearly Return</th><th>Total Return</th>
+        </tr>
+      </thead>
+      <tbody id="year-tbody"></tbody>
+    </table>
+  </div>
+
+  <button class="toggle-trades" id="toggle-btn">Show All Trades ▾</button>
+  <div class="trade-list" id="trade-list">
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Date</th><th>Result</th>
+            <th>ROI%</th><th>Position $</th><th>P/L</th><th>Balance After</th>
+          </tr>
+        </thead>
+        <tbody id="trade-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>&#9888; Important Disclaimer</strong>
+    <ul>
+      <li><strong style="color:#cbd5e1">Past performance is not indicative of future results.</strong> The returns shown are based on actual live trades executed from January 2026 and are provided for illustrative purposes only.</li>
+      <li>This calculator does not constitute financial advice, a solicitation, or an offer to buy or sell any security or options contract.</li>
+      <li>Options trading involves substantial risk of loss and is not appropriate for all investors. 1DTE SPX options strategies can result in significant losses in a short time period.</li>
+      <li>"Trade Allocation" represents the portion of capital deployed per trade, normalized to a standard Phoenix position size. "Lotto Win" trades are gap-open days where only the Phase 1 lottery ticket resolved; margin for those trades equals the debit paid to open.</li>
+      <li>Prior to trading options, please consult a licensed financial advisor and carefully read the <em>Characteristics and Risks of Standardized Options</em> (ODD) document published by the Options Clearing Corporation.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// pl = Total profit 70% (col AT) — actual dollar P/L per 1-contract standard position
+// margin = actual margin/cost per position from col S (or debit×100 for Lotto Wins)
+//   Lotto Win margin = DebitToOpen × $100 (only Phase 1 lottery ticket executed)
+//   Regular margin = spread margin from the spreadsheet; 15000 used where col S is blank/broken
+// lotto = true on gap-open days where only Phase 1 (lottery ticket) resolved
+const TRADES = [
+  {year:2026,date:"Jan 2", pl:285,  lotto:true, margin:185},
+  {year:2026,date:"Jan 5", pl:480,  lotto:false,margin:7210},
+  {year:2026,date:"Jan 6", pl:-860, lotto:false,margin:6190},
+  {year:2026,date:"Jan 7", pl:265,  lotto:false,margin:8280},
+  {year:2026,date:"Jan 8", pl:325,  lotto:false,margin:13480},
+  {year:2026,date:"Jan 12",pl:-1065,lotto:false,margin:9500},
+  {year:2026,date:"Jan 13",pl:365,  lotto:false,margin:12950},
+  {year:2026,date:"Jan 14",pl:290,  lotto:false,margin:13010},
+  {year:2026,date:"Jan 15",pl:95,   lotto:false,margin:8910},
+  {year:2026,date:"Jan 16",pl:2025, lotto:true, margin:215},
+  {year:2026,date:"Jan 22",pl:360,  lotto:false,margin:10550},
+  {year:2026,date:"Jan 23",pl:525,  lotto:false,margin:14780},
+  {year:2026,date:"Jan 26",pl:125,  lotto:false,margin:11000},
+  {year:2026,date:"Jan 27",pl:510,  lotto:false,margin:8670},
+  {year:2026,date:"Jan 28",pl:270,  lotto:true, margin:260},
+  {year:2026,date:"Jan 29",pl:290,  lotto:false,margin:3020},
+  {year:2026,date:"Jan 30",pl:-1065,lotto:false,margin:24400},
+  {year:2026,date:"Feb 2", pl:1605, lotto:false,margin:12430},
+  {year:2026,date:"Feb 4", pl:675,  lotto:true, margin:295},
+  {year:2026,date:"Feb 9", pl:-1180,lotto:false,margin:8180},
+  {year:2026,date:"Feb 10",pl:350,  lotto:false,margin:10190},
+  {year:2026,date:"Feb 11",pl:770,  lotto:true, margin:200},
+  {year:2026,date:"Feb 13",pl:255,  lotto:false,margin:22620},
+  {year:2026,date:"Feb 17",pl:300,  lotto:false,margin:17250},
+  {year:2026,date:"Feb 18",pl:520,  lotto:false,margin:12860},
+  {year:2026,date:"Feb 19",pl:-1775,lotto:false,margin:16180},
+  {year:2026,date:"Feb 20",pl:615,  lotto:false,margin:16840},
+  {year:2026,date:"Feb 24",pl:285,  lotto:false,margin:14280},
+  {year:2026,date:"Feb 25",pl:-1630,lotto:false,margin:16560},
+  {year:2026,date:"Feb 26",pl:-260, lotto:false,margin:15000},
+  {year:2026,date:"Mar 2", pl:2140, lotto:false,margin:15000},
+  {year:2026,date:"Mar 3", pl:330,  lotto:false,margin:15000},
+  {year:2026,date:"Mar 4", pl:-1885,lotto:false,margin:15000},
+  {year:2026,date:"Mar 5", pl:230,  lotto:true, margin:360},
+  {year:2026,date:"Mar 6", pl:860,  lotto:false,margin:27650},
+  {year:2026,date:"Mar 9", pl:-1590,lotto:false,margin:24800},
+  {year:2026,date:"Mar 10",pl:485,  lotto:false,margin:17680},
+  {year:2026,date:"Mar 11",pl:295,  lotto:false,margin:23810},
+  {year:2026,date:"Mar 12",pl:-1765,lotto:false,margin:33270},
+  {year:2026,date:"Mar 16",pl:520,  lotto:false,margin:16590},
+  {year:2026,date:"Mar 17",pl:950,  lotto:false,margin:17660},
+  {year:2026,date:"Mar 18",pl:-1645,lotto:false,margin:20690},
+  {year:2026,date:"Mar 19",pl:-1725,lotto:false,margin:23550},
+  {year:2026,date:"Mar 24",pl:725,  lotto:false,margin:18030},
+  {year:2026,date:"Mar 25",pl:525,  lotto:false,margin:20780},
+  {year:2026,date:"Mar 30",pl:2420, lotto:false,margin:3930},
+  {year:2026,date:"Apr 1", pl:520,  lotto:false,margin:19330},
+  {year:2026,date:"Apr 2", pl:-1585,lotto:false,margin:28000},
+  {year:2026,date:"Apr 6", pl:705,  lotto:false,margin:19500},
+  {year:2026,date:"Apr 7", pl:1205, lotto:true, margin:435},
+  {year:2026,date:"Apr 9", pl:345,  lotto:false,margin:12230},
+  {year:2026,date:"Apr 10",pl:-285, lotto:true, margin:285},
+  {year:2026,date:"Apr 20",pl:565,  lotto:false,margin:11710},
+  {year:2026,date:"Apr 21",pl:500,  lotto:false,margin:20510},
+  {year:2026,date:"Apr 23",pl:380,  lotto:false,margin:15770},
+  {year:2026,date:"Apr 24",pl:240,  lotto:false,margin:13830},
+  {year:2026,date:"Apr 27",pl:560,  lotto:false,margin:15160},
+  {year:2026,date:"Apr 28",pl:-805, lotto:false,margin:11990},
+  {year:2026,date:"Apr 29",pl:440,  lotto:false,margin:16930},
+  {year:2026,date:"May 1", pl:1240, lotto:false,margin:13300},
+  {year:2026,date:"May 4", pl:240,  lotto:false,margin:16080},
+  {year:2026,date:"May 11",pl:305,  lotto:false,margin:16020},
+  {year:2026,date:"May 12",pl:335,  lotto:false,margin:10480},
+  {year:2026,date:"May 13",pl:-1175,lotto:false,margin:14740},
+  {year:2026,date:"May 18",pl:535,  lotto:false,margin:17820},
+  {year:2026,date:"May 19",pl:-1345,lotto:false,margin:15820},
+  {year:2026,date:"May 21",pl:-1440,lotto:false,margin:15280},
+  {year:2026,date:"May 26",pl:350,  lotto:false,margin:10410},
+  {year:2026,date:"May 27",pl:485,  lotto:false,margin:11420},
+  {year:2026,date:"May 28",pl:490,  lotto:false,margin:10550},
+  {year:2026,date:"May 29",pl:-1260,lotto:false,margin:12630},
+  {year:2026,date:"Jun 1", pl:555,  lotto:false,margin:9700},
+  {year:2026,date:"Jun 2", pl:345,  lotto:false,margin:12610},
+  {year:2026,date:"Jun 3", pl:325,  lotto:false,margin:9550},
+  {year:2026,date:"Jun 4", pl:600,  lotto:true, margin:210},
+  {year:2026,date:"Jun 8", pl:2750, lotto:true, margin:280},
+  {year:2026,date:"Jun 9", pl:1070, lotto:false,margin:22060},
+  {year:2026,date:"Jun 12",pl:705,  lotto:true, margin:325},
+  {year:2026,date:"Jun 16",pl:1065, lotto:false,margin:15950},
+  {year:2026,date:"Jun 22",pl:1570, lotto:true, margin:260},
+  {year:2026,date:"Jun 24",pl:-2205,lotto:false,margin:15320},
+  {year:2026,date:"Jun 25",pl:-1830,lotto:false,margin:14440},
+  {year:2026,date:"Jun 26",pl:285,  lotto:false,margin:18540},
+  {year:2026,date:"Jul 1", pl:590,  lotto:false,margin:11150},
+  {year:2026,date:"Jul 7", pl:515,  lotto:false,margin:17250},
+  {year:2026,date:"Jul 8", pl:255,  lotto:false,margin:14810},
+  {year:2026,date:"Jul 10",pl:315,  lotto:false,margin:11540},
+  {year:2026,date:"Jul 13",pl:-1370,lotto:false,margin:12490},
+  {year:2026,date:"Jul 14",pl:-1090,lotto:false,margin:9540},
+  {year:2026,date:"Jul 15",pl:380,  lotto:false,margin:8230},
+  {year:2026,date:"Jul 16",pl:895,  lotto:true, margin:235},
+  {year:2026,date:"Jul 20",pl:315,  lotto:false,margin:15430},
+  {year:2026,date:"Jul 22",pl:350,  lotto:true, margin:250},
+  {year:2026,date:"Jul 24",pl:240,  lotto:false,margin:13770},
+  {year:2026,date:"Jul 27",pl:205,  lotto:false,margin:12950},
+  {year:2026,date:"Jul 28",pl:320,  lotto:true, margin:290},
+  {year:2026,date:"Aug 6", pl:370,  lotto:false,margin:15710},
+  {year:2026,date:"Aug 7", pl:-985, lotto:false,margin:30240},
+  {year:2026,date:"Aug 10",pl:235,  lotto:false,margin:9330},
+  {year:2026,date:"Aug 11",pl:215,  lotto:false,margin:10590},
+  {year:2026,date:"Aug 12",pl:310,  lotto:true, margin:200},
+  {year:2026,date:"Aug 14",pl:175,  lotto:false,margin:9340},
+  {year:2026,date:"Aug 17",pl:360,  lotto:false,margin:13540},
+];
+
+var isCompounding = true;
+
+function fmt$(n) {
+  if (Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+function fmtPct(n) { return (n >= 0 ? '+' : '') + n.toFixed(1) + '%'; }
+// STD_MARGIN is the reference for P/L scaling in the account simulation
+// (avg regular-day margin, so $15k allocation ≈ 1 standard position)
+const STD_MARGIN = 15000;
+function tradeRoi(t) { return t.pl / t.margin; }      // actual ROI% for trade log display
+function tradePl(t, size) { return size / STD_MARGIN * t.pl; } // P/L for account simulation
+
+function compute() {
+  var balance = parseInt(document.getElementById('balance-slider').value);
+  var pct = parseInt(document.getElementById('pct-slider').value);
+  var fixedBase = Math.round(balance * pct / 100);
+
+  document.getElementById('pct-display').textContent = pct + '%';
+  var initSize = Math.round(balance * pct / 100);
+  document.getElementById('trade-size-display').innerHTML =
+    '<span style="color:#f8fafc;font-size:17px;font-weight:600">$' + initSize.toLocaleString() +
+    '</span>&nbsp;&nbsp;<span style="color:#64748b">per trade</span>';
+
+  var bal = balance;
+  var balHistory = [balance];
+  var yearData = {};
+
+  TRADES.forEach(function(t) {
+    var tradeSize = isCompounding ? Math.round(bal * pct / 100) : fixedBase;
+    var roi = tradeRoi(t);          // actual ROI% for display (t.pl / t.margin)
+    var pl = tradePl(t, tradeSize); // account P/L uses STD_MARGIN to keep Lotto Wins proportional
+    var balBefore = bal;
+    bal += pl;
+
+    if (!yearData[t.year]) {
+      yearData[t.year] = {trades:0,wins:0,losses:0,startBal:balBefore,endBal:bal,profit:0};
+    }
+    yearData[t.year].trades++;
+    yearData[t.year].endBal = bal;
+    yearData[t.year].profit += pl;
+    if (t.pl > 0) yearData[t.year].wins++; else yearData[t.year].losses++;
+
+    balHistory.push(bal);
+    t._size = tradeSize;
+    t._pl = pl;
+    t._bal = bal;
+  });
+
+  var totalWins = TRADES.filter(function(t){return t.pl>0;}).length;
+  var winRate = (totalWins / TRADES.length * 100).toFixed(1);
+  var netPl = bal - balance;
+  var pctGain = netPl / balance * 100;
+  var totalGains = TRADES.reduce(function(s,t){return s + (t.pl > 0 ? t.pl : 0);}, 0);
+  var totalLosses = TRADES.reduce(function(s,t){return s + (t.pl < 0 ? -t.pl : 0);}, 0);
+  var profitFactor = totalLosses > 0 ? totalGains / totalLosses : Infinity;
+
+  document.getElementById('trade-roi-display').textContent = profitFactor.toFixed(2) + 'x';
+  document.getElementById('total-trades-display').textContent = TRADES.length;
+  document.getElementById('win-rate-display').textContent = winRate + '%';
+  document.getElementById('total-roi-display').textContent = fmtPct(pctGain);
+  var first = TRADES[0];
+  document.getElementById('live-since-display').textContent = first.date.split(' ')[0] + ' ' + first.year;
+
+  document.getElementById('ending-balance').textContent = fmt$(bal);
+  var gainEl = document.getElementById('total-gain');
+  gainEl.textContent = (netPl >= 0 ? '+' : '') + fmt$(netPl);
+  gainEl.className = netPl >= 0 ? 'result-sub' : 'result-sub result-loss';
+  var pctEl = document.getElementById('pct-gain');
+  pctEl.textContent = fmtPct(pctGain);
+  pctEl.className = pctGain >= 0 ? 'result-sub' : 'result-sub result-loss';
+
+  // Year summary table
+  var tbody = document.getElementById('year-tbody');
+  tbody.innerHTML = '';
+  Object.keys(yearData).sort().forEach(function(yr) {
+    var d = yearData[yr];
+    var wr = (d.wins / d.trades * 100).toFixed(0);
+    var yRet = (d.profit / d.startBal * 100).toFixed(1);
+    var tRet = ((d.endBal - balance) / balance * 100).toFixed(1);
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><strong style="color:#f8fafc">' + yr + '</strong></td>' +
+      '<td>' + d.trades + '</td>' +
+      '<td style="color:#a78bfa">' + d.wins + '</td>' +
+      '<td style="color:#f87171">' + d.losses + '</td>' +
+      '<td>' + wr + '%</td>' +
+      '<td>' + fmt$(d.startBal) + '</td>' +
+      '<td style="color:#a78bfa;font-weight:700">' + fmt$(d.endBal) + '</td>' +
+      '<td class="' + (d.profit>=0?'td-gain':'td-loss') + '">' + (d.profit>=0?'+':'') + fmt$(d.profit) + '</td>' +
+      '<td class="' + (parseFloat(yRet)>=0?'td-gain':'td-loss') + '">' + fmtPct(parseFloat(yRet)) + '</td>' +
+      '<td class="' + (parseFloat(tRet)>=0?'td-gain':'td-loss') + '" style="font-weight:700">' + fmtPct(parseFloat(tRet)) + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  // Trade log (reverse order)
+  var tradeTbody = document.getElementById('trade-tbody');
+  tradeTbody.innerHTML = '';
+  var byYear = {};
+  TRADES.forEach(function(t) { if(!byYear[t.year]) byYear[t.year]=[]; byYear[t.year].push(t); });
+  var sortedYears = Object.keys(byYear).map(Number).sort(function(a,b){return b-a;});
+  var num = TRADES.length;
+  sortedYears.forEach(function(yr) {
+    var hdr = document.createElement('tr');
+    hdr.innerHTML = '<td colspan="8" style="background:#1e3a5f;color:#c4b5fd;font-weight:700;font-size:15px;padding:10px 14px;letter-spacing:.05em;">' + yr + '</td>';
+    tradeTbody.appendChild(hdr);
+    byYear[yr].slice().reverse().forEach(function(t) {
+      var roiPct = t.pl / t.margin * 100;
+      var pillCls = t.lotto ? 'pill-lotto' : (t.pl > 0 ? 'pill-win' : 'pill-loss');
+      var pillText = t.lotto ? 'Lotto Win' : (t.pl > 0 ? 'Win' : 'Loss');
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td style="color:#475569">' + num-- + '</td>' +
+        '<td>' + t.date + '</td>' +
+        '<td><span class="pill ' + pillCls + '">' + pillText + '</span></td>' +
+        '<td class="' + (t.pl>0?'td-gain':'td-loss') + '">' + (roiPct>0?'+':'') + roiPct.toFixed(2) + '%</td>' +
+        '<td style="color:#64748b">' + fmt$(t._size) + '</td>' +
+        '<td class="' + (t._pl>=0?'td-gain':'td-loss') + '">' + (t._pl>=0?'+':'') + fmt$(t._pl) + '</td>' +
+        '<td style="color:#e2e8f0;font-weight:600">' + fmt$(t._bal) + '</td>';
+      tradeTbody.appendChild(tr);
+    });
+  });
+
+  drawChart(balHistory, balance);
+}
+
+function drawChart(data, start) {
+  var canvas = document.getElementById('chart');
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 220 * dpr;
+  ctx.scale(dpr, dpr);
+  var W = rect.width, H = 220;
+  ctx.clearRect(0,0,W,H);
+
+  var pad = {top:20,right:20,bottom:30,left:70};
+  var cW = W-pad.left-pad.right, cH = H-pad.top-pad.bottom;
+  var minV = Math.min.apply(null,data), maxV = Math.max.apply(null,data);
+  var range = maxV-minV || 1;
+
+  function xOf(i){return pad.left+(i/(data.length-1))*cW;}
+  function yOf(v){return pad.top+cH-((v-minV)/range)*cH;}
+
+  ctx.strokeStyle='#1e293b'; ctx.lineWidth=1;
+  ctx.fillStyle='#64748b'; ctx.font='11px -apple-system,sans-serif'; ctx.textAlign='right';
+  for(var i=0;i<=5;i++){
+    var v=minV+(range*i/5), y=yOf(v);
+    ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke();
+    ctx.fillText(fmt$(v),pad.left-6,y+4);
+  }
+
+  var sy=yOf(start);
+  ctx.setLineDash([4,4]); ctx.strokeStyle='#334155'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.left,sy); ctx.lineTo(W-pad.right,sy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  var grad=ctx.createLinearGradient(0,pad.top,0,pad.top+cH);
+  grad.addColorStop(0,'rgba(139,92,246,0.3)'); grad.addColorStop(1,'rgba(139,92,246,0.02)');
+  ctx.beginPath(); ctx.moveTo(xOf(0),yOf(data[0]));
+  data.forEach(function(v,i){ctx.lineTo(xOf(i),yOf(v));});
+  ctx.lineTo(xOf(data.length-1),pad.top+cH); ctx.lineTo(xOf(0),pad.top+cH);
+  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+
+  ctx.beginPath(); ctx.strokeStyle='#8b5cf6'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+  data.forEach(function(v,i){if(i===0)ctx.moveTo(xOf(i),yOf(v));else ctx.lineTo(xOf(i),yOf(v));});
+  ctx.stroke();
+
+  var lx=xOf(data.length-1), ly=yOf(data[data.length-1]);
+  ctx.beginPath(); ctx.arc(lx,ly,5,0,Math.PI*2);
+  ctx.fillStyle='#8b5cf6'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+}
+
+document.getElementById('balance-slider').addEventListener('input', function(){
+  document.getElementById('balance-display').textContent = '$'+parseInt(this.value).toLocaleString('en-US');
+  compute();
+});
+document.getElementById('pct-slider').addEventListener('input', function(){compute();});
+document.getElementById('mode-fixed').addEventListener('click',function(){
+  isCompounding=false; this.classList.add('active');
+  document.getElementById('mode-compound').classList.remove('active'); compute();
+});
+document.getElementById('mode-compound').addEventListener('click',function(){
+  isCompounding=true; this.classList.add('active');
+  document.getElementById('mode-fixed').classList.remove('active'); compute();
+});
+document.getElementById('toggle-btn').addEventListener('click',function(){
+  var list=document.getElementById('trade-list');
+  if(list.style.display==='block'){list.style.display='none';this.textContent='Show All Trades ▾';}
+  else{list.style.display='block';this.textContent='Hide Trades ▴';}
+});
+window.addEventListener('resize',function(){compute();});
+compute();
+</script>
+<script>
+(function() {
+  function sendHeight() {
+    window.parent.postMessage({ iframeHeight: document.body.scrollHeight }, '*');
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  new ResizeObserver(sendHeight).observe(document.body);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "trade-updater",
+  "version": "1.0.0",
+  "description": "Pulls trade data from Google Sheets and updates calculator HTML files",
+  "main": "update-trades.js",
+  "scripts": {
+    "update": "node update-trades.js"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}

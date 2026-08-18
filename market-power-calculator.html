@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Power — SPX Returns Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0e1a;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-bottom: 1px solid #1e3a5f;
+    padding: 48px 24px 40px;
+    text-align: center;
+  }
+
+  .badge {
+    display: inline-block;
+    background: rgba(59,130,246,0.15);
+    border: 1px solid rgba(59,130,246,0.3);
+    color: #60a5fa;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    line-height: 1.1;
+    color: #f8fafc;
+    margin-bottom: 14px;
+  }
+
+  h1 span { color: #3b82f6; }
+
+  .subtitle {
+    color: #94a3b8;
+    font-size: 17px;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* Stat bar */
+  .stat-bar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: #1e293b;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 36px;
+  }
+
+  .stat-item {
+    background: #0f172a;
+    padding: 20px 16px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: #3b82f6;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  /* Controls */
+  .controls {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+
+  .controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  .field-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .amount-display {
+    font-size: 38px;
+    font-weight: 800;
+    color: #f8fafc;
+    margin-bottom: 12px;
+    line-height: 1;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #1e293b;
+    outline: none;
+    margin-bottom: 8px;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 3px solid #0f172a;
+    box-shadow: 0 0 0 2px #3b82f6;
+    transition: transform 0.1s;
+  }
+
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+  .range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #475569;
+  }
+
+  .pct-display {
+    font-size: 38px;
+    font-weight: 800;
+    color: #f8fafc;
+    margin-bottom: 12px;
+    line-height: 1;
+  }
+
+  .pct-display span { font-size: 22px; color: #64748b; }
+
+  /* Year filters */
+  .year-filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #1e293b;
+  }
+
+  .year-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid #1e293b;
+    background: #1e293b;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .year-btn.active {
+    background: rgba(59,130,246,0.15);
+    border-color: rgba(59,130,246,0.4);
+    color: #60a5fa;
+  }
+
+  /* Results */
+  .result-card {
+    background: linear-gradient(135deg, #0f2040 0%, #0f172a 100%);
+    border: 1px solid #1e3a5f;
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    text-align: center;
+  }
+
+  .result-number {
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .result-number.green { color: #4ade80; }
+  .result-number.blue { color: #60a5fa; }
+  .result-number.white { color: #f8fafc; }
+
+  .result-label {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  /* Chart */
+  .chart-wrap {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 32px;
+  }
+
+  .chart-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 20px;
+  }
+
+  canvas { width: 100% !important; }
+
+  /* Year summary table */
+  .year-table {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+
+  .year-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  .year-table th {
+    background: #1e293b;
+    padding: 12px 20px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .year-table td {
+    padding: 14px 20px;
+    border-top: 1px solid #1e293b;
+    color: #cbd5e1;
+  }
+
+  .year-table tr:hover td { background: #1e293b; }
+
+  .td-gain { color: #4ade80; font-weight: 700; }
+  .td-loss { color: #f87171; font-weight: 700; }
+
+  /* Trade list toggle */
+  .toggle-trades {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 12px;
+    transition: all 0.15s;
+  }
+
+  .toggle-trades:hover { background: #334155; color: #e2e8f0; }
+
+  .trade-list {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    overflow: hidden;
+    display: none;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+
+  .trade-list table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .trade-list th {
+    background: #1e293b;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .trade-list td {
+    padding: 10px 14px;
+    border-top: 1px solid #1e293b;
+    color: #94a3b8;
+  }
+
+  .trade-list tr:hover td { background: #1e293b; }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .pill-win { background: rgba(74,222,128,0.1); color: #4ade80; }
+  .pill-loss { background: rgba(248,113,113,0.1); color: #f87171; }
+  .pill-adj { background: rgba(251,191,36,0.1); color: #fbbf24; }
+
+  .disclaimer {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-left: 4px solid #f59e0b;
+    border-radius: 12px;
+    padding: 22px 24px;
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.8;
+    margin-top: 32px;
+  }
+  .disclaimer strong { color: #f59e0b; font-size: 14px; }
+  .disclaimer ul { margin: 10px 0 0 0; padding-left: 18px; }
+  .disclaimer li { margin-bottom: 6px; }
+
+  @media (max-width: 640px) {
+    .controls-grid { grid-template-columns: 1fr; gap: 24px; }
+    .result-card { grid-template-columns: 1fr; }
+    .stat-bar { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">Historical Performance</div>
+  <h1>Market Power <span>Returns Calculator</span></h1>
+  <p class="subtitle">See how your account could have performed following our SPX credit spread strategy from 2023 through 2026.</p>
+</div>
+
+<div class="container">
+
+  <!-- Overall stat bar -->
+  <div class="stat-bar">
+    <div class="stat-item">
+      <div class="stat-value" id="trade-roi-display">—</div>
+      <div class="stat-label">Total Trade ROI</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="total-roi-display">—</div>
+      <div class="stat-label">Account Return</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="total-trades-display">—</div>
+      <div class="stat-label">Total Trades</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="win-rate-display">—</div>
+      <div class="stat-label">Win Rate</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="years-display">—</div>
+      <div class="stat-label">Years of Live Trading</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="controls-grid">
+      <div>
+        <label class="field-label">Starting Account Balance</label>
+        <div class="amount-display" id="balance-display">$25,000</div>
+        <input type="range" id="balance-slider" min="5000" max="500000" step="5000" value="25000">
+        <div class="range-labels"><span>$5k</span><span>$500k</span></div>
+      </div>
+      <div>
+        <label class="field-label">Trade Allocation (% of Account)</label>
+        <div class="amount-display" id="pct-display">20%</div>
+        <input type="range" id="pct-slider" min="1" max="50" step="1" value="20">
+        <div class="range-labels"><span>1%</span><span>50%</span></div>
+        <div id="contract-display" style="font-size:15px;color:#64748b;margin-top:8px;line-height:1.4;"></div>
+      </div>
+    </div>
+
+    <div class="year-filters">
+      <span style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;align-self:center;margin-right:4px;">Include Years:</span>
+      <button class="year-btn active" data-year="2023">2023</button>
+      <button class="year-btn active" data-year="2024">2024</button>
+      <button class="year-btn active" data-year="2025">2025</button>
+      <button class="year-btn active" data-year="2026">2026 (partial)</button>
+    </div>
+    <div class="year-filters" style="margin-top:12px;">
+      <span style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;align-self:center;margin-right:8px;">Growth Mode:</span>
+      <button class="year-btn" id="mode-fixed">Fixed Contracts</button>
+      <button class="year-btn active" id="mode-compound">Compounding</button>
+    </div>
+  </div>
+
+  <!-- Result card -->
+  <div class="result-card">
+    <div>
+      <div class="result-number green" id="ending-balance">—</div>
+      <div class="result-label">Ending Balance</div>
+    </div>
+    <div>
+      <div class="result-number blue" id="total-gain">—</div>
+      <div class="result-label">Total Profit</div>
+    </div>
+    <div>
+      <div class="result-number white" id="pct-gain">—</div>
+      <div class="result-label">Return on Account</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-wrap">
+    <div class="chart-title">Account Balance Over Time</div>
+    <canvas id="chart" height="280"></canvas>
+  </div>
+
+  <!-- Year-by-year table -->
+  <div class="year-table">
+    <table id="year-summary">
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Trades</th>
+          <th>Wins</th>
+          <th>Losses</th>
+          <th>Win Rate</th>
+          <th>Account Start</th>
+          <th>Account End</th>
+          <th>Profit</th>
+          <th>Yearly Return</th>
+          <th>Total Return</th>
+        </tr>
+      </thead>
+      <tbody id="year-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Trade log -->
+  <button class="toggle-trades" id="toggle-btn">Show All Trades ▾</button>
+  <div class="trade-list" id="trade-list">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Year</th>
+          <th>Result</th>
+          <th>ROI%</th>
+          <th>Position $</th>
+          <th>P/L</th>
+          <th>Balance After</th>
+        </tr>
+      </thead>
+      <tbody id="trade-tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="disclaimer">
+    <strong>⚠ Important Disclaimer</strong>
+    <ul>
+      <li><strong style="color:#cbd5e1">Past performance is not indicative of future results.</strong> The returns shown are based on actual historical trades executed from <span id="disclaimer-date-range">—</span> and are provided for illustrative purposes only.</li>
+      <li>This calculator does not constitute financial advice, a solicitation, or an offer to buy or sell any security or options contract. It is intended solely for educational purposes.</li>
+      <li>Options trading involves substantial risk of loss and is not appropriate for all investors. SPX credit spreads, including those with adjustment rounds, can result in significant losses that exceed the base margin shown.</li>
+      <li>"Trade Allocation" represents the margin committed per base trade as a percentage of your starting account balance. For trades involving adjustment rounds, the actual capital at risk may be larger than the base allocation shown, which is not reflected in the position size displayed.</li>
+      <li>The compounding mode assumes trade sizes scale proportionally with account growth. Actual trading results will vary based on execution, slippage, market conditions, and position sizing decisions made at the time of each trade.</li>
+      <li>Prior to trading options, please consult a licensed financial advisor and carefully read the <em>Characteristics and Risks of Standardized Options</em> (ODD) document published by the Options Clearing Corporation.</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+const TRADES = [
+  // 2023
+  {year:2023,date:"Jan 5",result:"Expired",roi:7.50},
+  {year:2023,date:"Jan 6",result:"Expired",roi:6.30},
+  {year:2023,date:"Jan 11",result:"Expired",roi:5.20},
+  {year:2023,date:"Jan 18",result:"Expired",roi:5.20},
+  {year:2023,date:"Jan 20",result:"Expired",roi:6.30},
+  {year:2023,date:"Jan 26",result:"Expired",roi:5.20},
+  {year:2023,date:"Jan 30",result:"Expired",roi:7.50},
+  {year:2023,date:"Jan 31",result:"Expired",roi:6.30},
+  {year:2023,date:"Feb 1",result:"Expired",roi:5.20},
+  {year:2023,date:"Feb 2",result:"Expired",roi:6.30},
+  {year:2023,date:"Feb 3",result:"Expired",roi:6.30},
+  {year:2023,date:"Feb 7",result:"Expired",roi:5.20},
+  {year:2023,date:"Feb 8",result:"Expired",roi:5.20},
+  {year:2023,date:"Feb 13",result:"Expired",roi:5.20},
+  {year:2023,date:"Feb 16",result:"Expired",roi:5.20},
+  {year:2023,date:"Feb 21",result:"Expired",roi:6.30},
+  {year:2023,date:"Feb 24",result:"Expired",roi:5.20},
+  {year:2023,date:"Mar 3",result:"Expired",roi:5.20},
+  {year:2023,date:"Mar 7",result:"Expired",roi:5.20},
+  {year:2023,date:"Mar 9",result:"Expired",roi:5.20},
+  {year:2023,date:"Mar 10",result:"Expired",roi:5.20},
+  {year:2023,date:"Mar 14",result:"Expired",roi:5.20},
+  {year:2023,date:"Mar 16",result:"Expired",roi:5.20},
+  {year:2023,date:"Mar 17",result:"Expired",roi:5.20},
+  {year:2023,date:"Mar 21",result:"Expired",roi:5.20},
+  {year:2023,date:"Mar 22",result:"Expired",roi:6.30},
+  {year:2023,date:"Mar 29",result:"Expired",roi:5.20},
+  {year:2023,date:"Mar 31",result:"Expired",roi:5.82},
+  {year:2023,date:"Apr 13",result:"Expired",roi:5.20},
+  {year:2023,date:"Apr 20",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Apr 26",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Apr 27",result:"Expired",roi:6.30},
+  {year:2023,date:"May 2",result:"Exited Early",roi:5.20},
+  {year:2023,date:"May 5",result:"Expired",roi:6.30},
+  {year:2023,date:"May 17",result:"Exited Early",roi:3.10},
+  {year:2023,date:"May 23",result:"Expired",roi:6.30},
+  {year:2023,date:"May 25",result:"Expired",roi:6.30},
+  {year:2023,date:"Jun 2",result:"Exited Early",roi:6.30},
+  {year:2023,date:"Jun 12",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Jun 15",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Jun 27",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Jul 6",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Jul 12",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Jul 13",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Jul 18",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Jul 20",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Jul 28",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Aug 2",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Aug 7",result:"Exited Early",roi:7.60},
+  {year:2023,date:"Aug 15",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Aug 23",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Aug 29",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Sep 6",result:"Exited Early",roi:6.45},
+  {year:2023,date:"Sep 14",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Sep 15",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Sep 20",result:"Adjusted",roi:3.20,mult:2},
+  {year:2023,date:"Oct 3",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Oct 6",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Oct 16",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Oct 18",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Oct 20",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Oct 25",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Oct 26",result:"Exited Early",roi:6.30},
+  {year:2023,date:"Oct 30",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Nov 1",result:"Adjusted/Loss",roi:-12.50,mult:4},
+  {year:2023,date:"Nov 9",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Nov 10",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Nov 15",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Nov 21",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Dec 20",result:"Exited Early",roi:5.20},
+  {year:2023,date:"Dec 21",result:"Exited Early",roi:5.20},
+  // 2024
+  {year:2024,date:"Jan 2",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Jan 3",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Jan 8",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Jan 18",result:"Adjusted/Loss",roi:-63.00,mult:4},
+  {year:2024,date:"Feb 1",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Feb 7",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Feb 13",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Feb 14",result:"Exited Early",roi:2.13},
+  {year:2024,date:"Feb 22",result:"Exited Early",roi:6.45},
+  {year:2024,date:"Mar 1",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Mar 5",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Mar 7",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Mar 12",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Mar 27",result:"Exited Early",roi:5.38},
+  {year:2024,date:"Apr 5",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Apr 10",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Apr 11",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Apr 15",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Apr 19",result:"Exited Early",roi:5.20},
+  {year:2024,date:"Apr 22",result:"Adjusted/Loss",roi:-2.90,mult:2},
+  {year:2024,date:"Apr 25",result:"Exited Same Day",roi:4.00},
+  {year:2024,date:"Apr 26",result:"Exited Early",roi:5.20},
+  {year:2024,date:"May 2",result:"Expired",roi:6.40},
+  {year:2024,date:"May 3",result:"Exited Early",roi:4.26},
+  {year:2024,date:"May 6",result:"Exited Early",roi:2.13},
+  {year:2024,date:"May 15",result:"Exited Early",roi:2.14},
+  {year:2024,date:"May 23",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Jun 5",result:"Exited Early",roi:6.45},
+  {year:2024,date:"Jun 17",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Jul 10",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Jul 11",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Jul 12",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Jul 17",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Jul 18",result:"Exited Early",roi:4.26},
+  {year:2024,date:"Jul 22",result:"Exited Early",roi:4.26},
+  {year:2024,date:"Jul 25",result:"Exited Early",roi:5.85},
+  {year:2024,date:"Jul 26",result:"Exited Early",roi:5.85},
+  {year:2024,date:"Aug 1",result:"Adjusted/Loss",roi:-38.00,mult:4},
+  {year:2024,date:"Aug 6",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Aug 8",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Aug 13",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Aug 15",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Aug 22",result:"Expired Worthless",roi:5.26},
+  {year:2024,date:"Aug 23",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Sep 3",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Sep 6",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Sep 9",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Sep 10",result:"Exited Early",roi:5.38},
+  {year:2024,date:"Sep 19",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Oct 1",result:"Exited Early",roi:4.21},
+  {year:2024,date:"Oct 7",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Oct 8",result:"Exited Early",roi:4.21},
+  {year:2024,date:"Oct 31",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Nov 7",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Nov 15",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Dec 11",result:"Exited Early",roi:6.45},
+  {year:2024,date:"Dec 20",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Dec 27",result:"Exited Early",roi:5.32},
+  {year:2024,date:"Dec 30",result:"Exited Early",roi:5.32},
+  // 2025
+  {year:2025,date:"Jan 3",result:"Adjustment/Loss",roi:-1.28,mult:2},
+  {year:2025,date:"Jan 7",result:"Win",roi:5.32},
+  {year:2025,date:"Jan 10",result:"Win",roi:5.32},
+  {year:2025,date:"Jan 15",result:"Win",roi:5.32},
+  {year:2025,date:"Jan 21",result:"Win",roi:4.30},
+  {year:2025,date:"Jan 27",result:"Win",roi:6.45},
+  {year:2025,date:"Jan 28",result:"Win",roi:5.32},
+  {year:2025,date:"Feb 7",result:"Win",roi:5.32},
+  {year:2025,date:"Feb 13",result:"Win",roi:5.32},
+  {year:2025,date:"Feb 21",result:"Win",roi:5.32},
+  {year:2025,date:"Feb 27",result:"Win",roi:5.32},
+  {year:2025,date:"Feb 28",result:"Win",roi:5.32},
+  {year:2025,date:"Mar 3",result:"Win",roi:5.32},
+  {year:2025,date:"Mar 5",result:"Win",roi:5.32},
+  {year:2025,date:"Mar 10",result:"Win",roi:5.32},
+  {year:2025,date:"Mar 14",result:"Win",roi:5.32},
+  {year:2025,date:"Mar 24",result:"Win",roi:5.32},
+  {year:2025,date:"Mar 26",result:"Win",roi:5.32},
+  {year:2025,date:"Mar 28",result:"Win",roi:4.20},
+  {year:2025,date:"Apr 3",result:"Adjustment/Loss",roi:-16.90,mult:2},
+  {year:2025,date:"Apr 16",result:"Win",roi:5.32},
+  {year:2025,date:"Apr 21",result:"Win",roi:5.32},
+  {year:2025,date:"Apr 22",result:"Win",roi:5.32},
+  {year:2025,date:"Apr 23",result:"Win",roi:3.19},
+  {year:2025,date:"Apr 24",result:"Win",roi:5.32},
+  {year:2025,date:"May 2",result:"Win",roi:5.32},
+  {year:2025,date:"May 21",result:"Win",roi:5.32},
+  {year:2025,date:"May 27",result:"Win",roi:5.32},
+  {year:2025,date:"Jun 6",result:"Win",roi:5.32},
+  {year:2025,date:"Jun 24",result:"Win",roi:5.32},
+  {year:2025,date:"Jun 26",result:"Win",roi:4.26},
+  {year:2025,date:"Jul 7",result:"Win",roi:5.32},
+  {year:2025,date:"Aug 1",result:"Win",roi:5.32},
+  {year:2025,date:"Aug 4",result:"Win",roi:5.32},
+  {year:2025,date:"Aug 8",result:"Win",roi:5.32},
+  {year:2025,date:"Aug 12",result:"Win",roi:5.32},
+  {year:2025,date:"Aug 22",result:"Win",roi:5.32},
+  {year:2025,date:"Sep 12",result:"Win",roi:5.32},
+  {year:2025,date:"Oct 10",result:"Win",roi:5.32},
+  {year:2025,date:"Oct 13",result:"Win",roi:5.32},
+  {year:2025,date:"Oct 20",result:"Win",roi:6.45},
+  {year:2025,date:"Oct 24",result:"2 Adjustments/Loss",roi:-4.47,mult:4},
+  {year:2025,date:"Oct 30",result:"Win",roi:5.32},
+  {year:2025,date:"Nov 4",result:"Win",roi:5.32},
+  {year:2025,date:"Nov 6",result:"Win",roi:4.26},
+  {year:2025,date:"Nov 10",result:"Win",roi:5.32},
+  {year:2025,date:"Nov 13",result:"Win",roi:5.32},
+  {year:2025,date:"Nov 20",result:"Win",roi:5.32},
+  {year:2025,date:"Nov 21",result:"Win",roi:4.26},
+  {year:2025,date:"Dec 12",result:"Win",roi:5.32},
+  {year:2025,date:"Dec 17",result:"Win",roi:5.32},
+  {year:2025,date:"Dec 18",result:"Win",roi:5.32},
+  {year:2025,date:"Dec 19",result:"Win",roi:3.20},
+  // 2026
+  {year:2026,date:"Jan 9",result:"Win",roi:6.45},
+  {year:2026,date:"Jan 20",result:"Win",roi:5.32},
+  {year:2026,date:"Jan 21",result:"Win",roi:5.32},
+  {year:2026,date:"Feb 3",result:"Win",roi:5.32},
+  {year:2026,date:"Feb 5",result:"Win",roi:5.32},
+  {year:2026,date:"Feb 6",result:"Win",roi:5.32},
+  {year:2026,date:"Feb 12",result:"Win",roi:5.32},
+  {year:2026,date:"Feb 23",result:"Win",roi:5.32},
+  {year:2026,date:"Mar 12",result:"Win",roi:5.32},
+  {year:2026,date:"Mar 20",result:"Win",roi:5.32},
+  {year:2026,date:"Mar 23",result:"Win",roi:5.32},
+  {year:2026,date:"Mar 26",result:"Win",roi:1.06},
+  {year:2026,date:"Mar 27",result:"Win",roi:5.32},
+  {year:2026,date:"Mar 31",result:"Win",roi:4.26},
+  {year:2026,date:"Apr 8",result:"Win",roi:6.45},
+  {year:2026,date:"Apr 13",result:"Win",roi:0.35},
+  {year:2026,date:"Apr 14",result:"Win",roi:6.38},
+  {year:2026,date:"Apr 17",result:"Win",roi:6.45},
+  {year:2026,date:"Apr 22",result:"Win",roi:5.32},
+  {year:2026,date:"Apr 29",result:"Win",roi:5.32},
+  {year:2026,date:"May 5",result:"Win",roi:0.67},
+  {year:2026,date:"May 14",result:"Win",roi:5.32},
+  {year:2026,date:"May 15",result:"Win",roi:5.32},
+  {year:2026,date:"May 20",result:"Win",roi:5.32},
+  {year:2026,date:"Jun 5",result:"Win",roi:5.32},
+  {year:2026,date:"Jun 10",result:"Win",roi:5.32},
+  {year:2026,date:"Jun 11",result:"Win",roi:5.32},
+  {year:2026,date:"Jun 15",result:"Win",roi:5.32},
+  {year:2026,date:"Jun 23",result:"Win",roi:5.32},
+  {year:2026,date:"Jun 29",result:"Win",roi:3.19},
+  {year:2026,date:"Jul 6",result:"Win",roi:7.60},
+  {year:2026,date:"Jul 9",result:"Win",roi:5.32},
+  {year:2026,date:"Jul 17",result:"Win",roi:6.45},
+  {year:2026,date:"Jul 21",result:"Win",roi:7.52},
+  {year:2026,date:"Jul 23",result:"Win",roi:7.60},
+  {year:2026,date:"Jul 29",result:"Win",roi:6.45},
+  {year:2026,date:"Jul 30",result:"Win",roi:6.45},
+  {year:2026,date:"Jul 31",result:"Loss",roi:-1.21},
+  {year:2026,date:"Aug 3",result:"Win",roi:0.31},
+  {year:2026,date:"Aug 13",result:"Win",roi:5.32},
+];
+
+const activeYears = new Set([2023,2024,2025,2026]);
+let isCompounding = true;
+
+function fmt$(n) {
+  if (Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1e3) return '$' + n.toLocaleString('en-US',{maximumFractionDigits:0});
+  return '$' + n.toFixed(0);
+}
+
+function fmtPct(n) {
+  return (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
+}
+
+function resultPillClass(result) {
+  const r = result.toLowerCase();
+  if (r.includes('loss') || r.includes('adjusted')) return 'pill-adj';
+  return 'pill-win';
+}
+
+function isLoss(t) { return t.roi < 0; }
+
+let chartInstance = null;
+
+function contractsFromBalance(balance, pct) {
+  return Math.max(1, Math.floor(balance * pct / 100 / 470));
+}
+
+function updateContractDisplay(balance) {
+  const pct = parseInt(document.getElementById('pct-slider').value);
+  const contracts = contractsFromBalance(balance, pct);
+  const dollars = contracts * 470;
+  document.getElementById('pct-display').textContent = pct + '%';
+  document.getElementById('contract-display').innerHTML =
+    `<span style="color:#f8fafc;font-size:17px;font-weight:600">$${dollars.toLocaleString()}</span>&nbsp;&nbsp;<span style="color:#64748b">(${contracts} contract${contracts !== 1 ? 's' : ''})</span>`;
+}
+
+function compute() {
+  const balance = parseInt(document.getElementById('balance-slider').value);
+  const pct = parseInt(document.getElementById('pct-slider').value);
+  // Fixed mode: always pct% of starting balance, rounded to whole contracts.
+  // Compounding: pct% of current balance, rounded to whole contracts.
+  const fixedBase = contractsFromBalance(balance, pct) * 470;
+
+  const filtered = TRADES.filter(t => activeYears.has(t.year));
+
+  let bal = balance;
+  const balanceHistory = [balance];
+  const labels = ['Start'];
+  const yearData = {};
+
+  filtered.forEach((t, i) => {
+    const scaledBase = isCompounding ? contractsFromBalance(bal, pct) * 470 : fixedBase;
+    const pl = scaledBase * (t.roi / 100);
+    const balBefore = bal;
+    bal += pl;
+
+    if (!yearData[t.year]) yearData[t.year] = { trades:0, wins:0, losses:0, startBal:balBefore, endBal:bal, profit:0 };
+    yearData[t.year].trades++;
+    yearData[t.year].endBal = bal;
+    yearData[t.year].profit += pl;
+    if (t.roi >= 0) yearData[t.year].wins++; else yearData[t.year].losses++;
+
+    balanceHistory.push(bal);
+    labels.push(t.date + ' ' + t.year);
+
+    t._tradeAmt = scaledBase;
+    t._pl = pl;
+    t._balAfter = bal;
+  });
+
+  updateContractDisplay(balance);
+
+  // Stats
+  const totalTrades = filtered.length;
+  const totalWins = filtered.filter(t => t.roi >= 0).length;
+  const totalLosses = totalTrades - totalWins;
+  const winRate = totalTrades > 0 ? (totalWins / totalTrades * 100).toFixed(1) : 0;
+  const ending = bal;
+  const gain = bal - balance;
+  const pctGain = (gain / balance * 100);
+
+  // Update stat bar
+  const tradeRoi = filtered.reduce((sum, t) => sum + t.roi, 0);
+  document.getElementById('trade-roi-display').textContent = '+' + tradeRoi.toFixed(0) + '%';
+  document.getElementById('total-trades-display').textContent = totalTrades;
+  document.getElementById('win-rate-display').textContent = winRate + '%';
+  const firstT = TRADES[0], lastT = TRADES[TRADES.length - 1];
+  const yearsLive = ((new Date(lastT.date + ' ' + lastT.year) - new Date(firstT.date + ' ' + firstT.year)) / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1);
+  document.getElementById('years-display').textContent = yearsLive;
+  document.getElementById('total-roi-display').textContent = fmtPct(pctGain);
+
+  // Update disclaimer date range
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dFirst = new Date(TRADES[0].date + ' ' + TRADES[0].year);
+  const dLast  = new Date(TRADES[TRADES.length-1].date + ' ' + TRADES[TRADES.length-1].year);
+  document.getElementById('disclaimer-date-range').textContent = MONTHS[dFirst.getMonth()] + ' ' + dFirst.getFullYear() + ' through ' + MONTHS[dLast.getMonth()] + ' ' + dLast.getFullYear();
+
+  // Update result card
+  document.getElementById('ending-balance').textContent = fmt$(ending);
+  document.getElementById('total-gain').textContent = (gain >= 0 ? '+' : '') + fmt$(gain);
+  document.getElementById('pct-gain').textContent = fmtPct(pctGain);
+
+  // Year table
+  const tbody = document.getElementById('year-tbody');
+  tbody.innerHTML = '';
+  const sortedYears = Object.keys(yearData).sort();
+  sortedYears.forEach(yr => {
+    const d = yearData[yr];
+    const wr = (d.wins / d.trades * 100).toFixed(0);
+    const yearlyRet = (d.profit / d.startBal * 100).toFixed(1);
+    const totalRet = ((d.endBal - balance) / balance * 100).toFixed(1);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong style="color:#f8fafc">${yr}</strong></td>
+      <td>${d.trades}</td>
+      <td style="color:#4ade80">${d.wins}</td>
+      <td style="color:#f87171">${d.losses}</td>
+      <td>${wr}%</td>
+      <td>${fmt$(d.startBal)}</td>
+      <td style="color:#4ade80;font-weight:700">${fmt$(d.endBal)}</td>
+      <td class="${d.profit >= 0 ? 'td-gain' : 'td-loss'}">${d.profit >= 0 ? '+' : ''}${fmt$(d.profit)}</td>
+      <td class="${parseFloat(yearlyRet) >= 0 ? 'td-gain' : 'td-loss'}">${fmtPct(parseFloat(yearlyRet))}</td>
+      <td class="${parseFloat(totalRet) >= 0 ? 'td-gain' : 'td-loss'}" style="font-weight:700">${fmtPct(parseFloat(totalRet))}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Trade log — grouped by year, newest first
+  const tradeTbody = document.getElementById('trade-tbody');
+  tradeTbody.innerHTML = '';
+  const byYear = {};
+  filtered.forEach(t => { (byYear[t.year] = byYear[t.year] || []).push(t); });
+  const sortedYearsDesc = Object.keys(byYear).map(Number).sort((a,b) => b - a);
+  let tradeNum = filtered.length;
+  sortedYearsDesc.forEach(yr => {
+    // Year heading row
+    const hdr = document.createElement('tr');
+    hdr.innerHTML = `<td colspan="8" style="background:#1e3a5f;color:#93c5fd;font-weight:700;font-size:15px;padding:10px 14px;letter-spacing:0.05em;">${yr}</td>`;
+    tradeTbody.appendChild(hdr);
+    // Trades for this year in reverse order
+    [...byYear[yr]].reverse().forEach(t => {
+      const tr = document.createElement('tr');
+      const pillCls = t.roi < 0 ? 'pill-loss' : (t.result.toLowerCase().includes('adjust') ? 'pill-adj' : 'pill-win');
+      tr.innerHTML = `
+        <td style="color:#475569">${tradeNum--}</td>
+        <td>${t.date}</td>
+        <td style="color:#64748b">${t.year}</td>
+        <td><span class="pill ${pillCls}">${t.result}</span></td>
+        <td class="${t.roi >= 0 ? 'td-gain' : 'td-loss'}">${t.roi > 0 ? '+' : ''}${t.roi.toFixed(2)}%</td>
+        <td style="color:#64748b">${fmt$(t._tradeAmt)}</td>
+        <td class="${t._pl >= 0 ? 'td-gain' : 'td-loss'}">${t._pl >= 0 ? '+' : ''}${fmt$(t._pl)}</td>
+        <td style="color:#e2e8f0;font-weight:600">${fmt$(t._balAfter)}</td>
+      `;
+      tradeTbody.appendChild(tr);
+    });
+  });
+
+  // Chart
+  drawChart(labels, balanceHistory, balance);
+}
+
+function drawChart(labels, data, startBalance) {
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+
+  // Downsample labels for display
+  const step = Math.max(1, Math.floor(labels.length / 40));
+  const sampledLabels = labels.filter((_, i) => i % step === 0 || i === labels.length - 1);
+  const sampledData = data.filter((_, i) => i % step === 0 || i === data.length - 1);
+
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+  // Simple canvas chart
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const W = rect.width - 56;
+  const H = 260;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+
+  const pad = { top: 20, right: 20, bottom: 40, left: 70 };
+  const cw = W - pad.left - pad.right;
+  const ch = H - pad.top - pad.bottom;
+
+  const minVal = Math.min(...data) * 0.95;
+  const maxVal = Math.max(...data) * 1.05;
+
+  function xp(i) { return pad.left + (i / (data.length - 1)) * cw; }
+  function yp(v) { return pad.top + ch - ((v - minVal) / (maxVal - minVal)) * ch; }
+
+  // Background grid
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (ch / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
+    const val = maxVal - (maxVal - minVal) * (i / 4);
+    ctx.fillStyle = '#475569';
+    ctx.font = '11px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(fmt$(val), pad.left - 8, y + 4);
+  }
+
+  // Starting balance line
+  if (startBalance >= minVal && startBalance <= maxVal) {
+    const sy = yp(startBalance);
+    ctx.strokeStyle = 'rgba(100,116,139,0.4)';
+    ctx.setLineDash([4,4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, sy); ctx.lineTo(pad.left + cw, sy); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
+  grad.addColorStop(0, 'rgba(59,130,246,0.25)');
+  grad.addColorStop(1, 'rgba(59,130,246,0.02)');
+  ctx.beginPath();
+  ctx.moveTo(xp(0), yp(data[0]));
+  data.forEach((v, i) => ctx.lineTo(xp(i), yp(v)));
+  ctx.lineTo(xp(data.length - 1), pad.top + ch);
+  ctx.lineTo(xp(0), pad.top + ch);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  data.forEach((v, i) => i === 0 ? ctx.moveTo(xp(i), yp(v)) : ctx.lineTo(xp(i), yp(v)));
+  ctx.stroke();
+
+  // End dot
+  const ex = xp(data.length - 1), ey = yp(data[data.length - 1]);
+  ctx.beginPath();
+  ctx.arc(ex, ey, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#3b82f6';
+  ctx.fill();
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+// Event listeners
+document.getElementById('balance-slider').addEventListener('input', function() {
+  const v = parseInt(this.value);
+  document.getElementById('balance-display').textContent = '$' + v.toLocaleString('en-US');
+  compute();
+});
+
+document.getElementById('pct-slider').addEventListener('input', function() {
+  compute();
+});
+
+document.getElementById('mode-fixed').addEventListener('click', function() {
+  isCompounding = false;
+  this.classList.add('active');
+  document.getElementById('mode-compound').classList.remove('active');
+  compute();
+});
+
+document.getElementById('mode-compound').addEventListener('click', function() {
+  isCompounding = true;
+  this.classList.add('active');
+  document.getElementById('mode-fixed').classList.remove('active');
+  compute();
+});
+
+document.querySelectorAll('.year-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const yr = parseInt(this.dataset.year);
+    if (activeYears.has(yr)) {
+      if (activeYears.size === 1) return; // keep at least one
+      activeYears.delete(yr);
+      this.classList.remove('active');
+    } else {
+      activeYears.add(yr);
+      this.classList.add('active');
+    }
+    compute();
+  });
+});
+
+document.getElementById('toggle-btn').addEventListener('click', function() {
+  const list = document.getElementById('trade-list');
+  if (list.style.display === 'block') {
+    list.style.display = 'none';
+    this.textContent = 'Show All Trades ▾';
+  } else {
+    list.style.display = 'block';
+    this.textContent = 'Hide Trades ▴';
+  }
+});
+
+window.addEventListener('resize', () => compute());
+
+compute();
+</script>
+<script>
+(function() {
+  function sendHeight() {
+    window.parent.postMessage({ iframeHeight: document.body.scrollHeight }, '*');
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  new ResizeObserver(sendHeight).observe(document.body);
+})();
+</script>
+</body>
+</html>
