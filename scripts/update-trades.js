@@ -197,7 +197,7 @@ async function main() {
     if (parsed.length) console.log(`   Tab "${title}": ${parsed.length} trades`);
     ddTrades = ddTrades.concat(parsed);
   }
-  ddTrades = sortByDate(ddTrades);
+    ddTrades = sortByDate(ddTrades).filter(t => t.year >= 2026);
   console.log(`   ✅ Double Dip total: ${ddTrades.length} trades`);
 
   // ── 3. Market Power ────────────────────────────────────────────────────
