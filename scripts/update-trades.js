@@ -58,12 +58,12 @@ function parsePhoenix(rows) {
       ? Math.round(debit * 100)
       : Math.round(num((row[18] || '').replace(/[^0-9.]/g, '')));
 
-    const roiRaw = (row[row.length - 1] || '').trim();
+        const roiRaw = (row[48] || '').trim(); // column AW
     if (roiRaw.includes('DIV') || roiRaw.includes('#')) continue;
 
-    const pl = Math.round(num(row[row.length - 4]));
+    const pl = Math.round(num(row[45])); // column AT
     if (!margin || pl === 0) continue;
-
+    
     trades.push({ year: d.year, date: d.label, pl, lotto, margin });
   }
   return trades;
