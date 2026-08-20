@@ -59,7 +59,7 @@ function parsePhoenix(rows) {
       : Math.round(num((row[18] || '').replace(/[^0-9.]/g, '')));
 
     const roiRaw = (row[row.length - 1] || '').trim();
-    if (!roiRaw || roiRaw.includes('DIV') || roiRaw.includes('#')) continue;
+    if (roiRaw.includes('DIV') || roiRaw.includes('#')) continue;
 
     const pl = Math.round(num(row[row.length - 4]));
     if (!margin || pl === 0) continue;
