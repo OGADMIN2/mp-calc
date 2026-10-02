@@ -196,7 +196,14 @@ async function main() {
     if (parsed.length) console.log(`   Tab "${title}": ${parsed.length} trades`);
     phxTrades = phxTrades.concat(parsed);
   }
-  phxTrades = sortByDate(phxTrades).filter(t => t.year >= 2026);
+    phxTrades = sortByDate(phxTrades).filter(t => t.year >= 2026);
+  const phxSeen = new Set();
+  phxTrades = phxTrades.filter(t => {
+    const key = `${t.year}-${t.date}`;
+    if (phxSeen.has(key)) return false;
+    phxSeen.add(key);
+    return true;
+  });
   console.log(`   ✅ Phoenix total: ${phxTrades.length} trades (2026+)`);
 
   // ── 2. Double Dip ──────────────────────────────────────────────────────
